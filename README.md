@@ -45,9 +45,9 @@
 
 $$
 \begin{aligned}
-F &= \operatorname{Conv}_{1\times1}(X) \\
-L(x, y) &= \sigma(\operatorname{Conv}_{1\times1}(F)) \quad \in \mathbb{R}^{B \times 1 \times H \times W} \\
-S &= \operatorname{Conv}_{3\times3}(F \odot (1.0 - L)) \\
+F &= \mathrm{Conv}_{1\times1}(X) \\
+L(x, y) &= \sigma(\mathrm{Conv}_{1\times1}(F)) \quad \in \mathbb{R}^{B \times 1 \times H \times W} \\
+S &= \mathrm{Conv}_{3\times3}(F \odot (1.0 - L)) \\
 Y &= F + \gamma \cdot S
 \end{aligned}
 $$
@@ -72,8 +72,8 @@ $$
 $$
 \begin{aligned}
 W_2^2 &= \|\mu_1 - \mu_2\|_2^2 + \frac{(w_1 - w_2)^2 + (h_1 - h_2)^2}{4} \\
-\operatorname{NWD} &= \exp\left(-\frac{\sqrt{W_2^2 + \epsilon}}{C}\right) \\
-\mathcal{L}_{\text{box}} &= \alpha_{\text{NWD}} \cdot (1 - \operatorname{NWD}) + (1 - \alpha_{\text{NWD}}) \cdot \mathcal{L}_{\text{CIoU}}
+\mathrm{NWD} &= \exp\left(-\frac{\sqrt{W_2^2 + \epsilon}}{C}\right) \\
+\mathcal{L}_{\text{box}} &= \alpha_{\text{NWD}} \cdot (1 - \mathrm{NWD}) + (1 - \alpha_{\text{NWD}}) \cdot \mathcal{L}_{\text{CIoU}}
 \end{aligned}
 $$
 
