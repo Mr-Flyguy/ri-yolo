@@ -2104,6 +2104,3 @@ class RFDBlock(nn.Module):
         structure = feat * (1.0 - illumination_mask)
         structure = self.structure_conv(structure)
         return feat + self.gamma * structure
-
-
-
