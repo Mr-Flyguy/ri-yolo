@@ -40,23 +40,42 @@
 ## 🔬 Ключевые научные компоненты
 
 ### 1. Модуль Spatial Retinex Feature Decoupling (RFDBlock)
+
 Для входного тензора признаков $X \in \mathbb{R}^{B \times C_1 \times H \times W}$ блок RFDBlock выполняет выравнивание каналов и пространственное разделение компонент:
-$$F = \text{Conv}_{1\times1}(X)$$
-$$L(x, y) = \sigma(\text{Conv}_{1\times1}(F)) \quad \in \mathbb{R}^{B \times 1 \times H \times W}$$
-$$S = \text{Conv}_{3\times3}(F \odot (1.0 - L))$$
-$$Y = F + \gamma \cdot S$$
-где $\gamma$ — обучаемый скалярный параметр с начальной инициализацией нулем ($\gamma=0$), что обеспечивает устойчивый старт обучения и исключает дестабилизацию предобученных весов.
+
+$$
+\begin{aligned}
+F &= \operatorname{Conv}_{1\times1}(X) \\
+L(x, y) &= \sigma(\operatorname{Conv}_{1\times1}(F)) \quad \in \mathbb{R}^{B \times 1 \times H \times W} \\
+S &= \operatorname{Conv}_{3\times3}(F \odot (1.0 - L)) \\
+Y &= F + \gamma \cdot S
+\end{aligned}
+$$
+
+где $\gamma$ — обучаемый скалярный параметр с начальной инициализацией нулем ($\gamma = 0$), что обеспечивает устойчивый старт обучения и исключает дестабилизацию предобученных весов.
 
 ### 2. Регуляризатор Retinex Smoothness Loss (RSL)
+
 Согласно теории Retinex, освещенность сцены меняется плавно в пространстве, а текстура и отражательная способность содержат резкие перепады. RSL накладывает физический априор через TV-регуляризатор:
-$$\mathcal{L}_{RSL} = \frac{1}{H(W-1)} \sum_{i,j} |L_{i,j+1} - L_{i,j}| + \frac{1}{(H-1)W} \sum_{i,j} |L_{i+1,j} - L_{i,j}|$$
-$$\mathcal{L}_{total} = \mathcal{L}_{det} + \lambda_{tv} \cdot \mathcal{L}_{RSL}$$
+
+$$
+\begin{aligned}
+\mathcal{L}_{\text{RSL}} &= \frac{1}{H(W-1)} \sum_{i,j} |L_{i,j+1} - L_{i,j}| + \frac{1}{(H-1)W} \sum_{i,j} |L_{i+1,j} - L_{i,j}| \\
+\mathcal{L}_{\text{total}} &= \mathcal{L}_{\text{det}} + \lambda_{\text{tv}} \cdot \mathcal{L}_{\text{RSL}}
+\end{aligned}
+$$
 
 ### 3. Метрика Normalized Wasserstein Distance (NWD)
+
 При малом размере или размытости темных объектов даже сдвиг на 1–2 пикселя приводит к резкому падению IoU до нуля. NWD представляет рамки в виде 2D-гауссиан $\mathcal{N}(\mu_1, \Sigma_1)$ и $\mathcal{N}(\mu_2, \Sigma_2)$:
-$$W_2^2 = \|\mu_1 - \mu_2\|_2^2 + \frac{(w_1 - w_2)^2 + (h_1 - h_2)^2}{4}$$
-$$\mathcal{NWD} = \exp\left(-\frac{\sqrt{W_2^2 + \epsilon}}{C}\right)$$
-$$\mathcal{L}_{box} = \alpha_{NWD} \cdot (1 - \mathcal{NWD}) + (1 - \alpha_{NWD}) \cdot \mathcal{L}_{CIoU}$$
+
+$$
+\begin{aligned}
+W_2^2 &= \|\mu_1 - \mu_2\|_2^2 + \frac{(w_1 - w_2)^2 + (h_1 - h_2)^2}{4} \\
+\operatorname{NWD} &= \exp\left(-\frac{\sqrt{W_2^2 + \epsilon}}{C}\right) \\
+\mathcal{L}_{\text{box}} &= \alpha_{\text{NWD}} \cdot (1 - \operatorname{NWD}) + (1 - \alpha_{\text{NWD}}) \cdot \mathcal{L}_{\text{CIoU}}
+\end{aligned}
+$$
 
 ---
 
@@ -164,9 +183,9 @@ python -c "from ultralytics.utils.downloads import attempt_download_asset; attem
 | :---: | :--- | :---: | :---: | :---: | :--- |
 | **1** | `1_baseline_yolov8s` | Стандартный C2f | CIoU | Отсутствует | Базовый уровень (Baseline YOLOv8s) |
 | **2** | `2_yolov8s_rfd` | **Spatial RFDBlock** | CIoU | Отсутствует | Влияние латентного Retinex-разделения |
-| **3** | `3_yolov8s_rfd_rsl` | **Spatial RFDBlock** | CIoU | **RSL ($\lambda_{tv}=0.01$)** | Вклад сглаживания карты освещенности |
-| **4** | `4_yolov8s_rfd_nwd` | **Spatial RFDBlock** | **NWD + CIoU ($\alpha=0.5$)** | Отсутствует | Вклад метрики Вассерштейна для рамок |
-| **5** | **`5_full_ri_yolo`** | **Spatial RFDBlock** | **NWD + CIoU ($\alpha=0.5$)** | **RSL ($\lambda_{tv}=0.01$)** | **Полный предложенный метод RI-YOLO** |
+| **3** | `3_yolov8s_rfd_rsl` | **Spatial RFDBlock** | CIoU | **RSL** ($\lambda_{\text{tv}} = 0.01$) | Вклад сглаживания карты освещенности |
+| **4** | `4_yolov8s_rfd_nwd` | **Spatial RFDBlock** | **NWD + CIoU** ($\alpha = 0.5$) | Отсутствует | Вклад метрики Вассерштейна для рамок |
+| **5** | **`5_full_ri_yolo`** | **Spatial RFDBlock** | **NWD + CIoU** ($\alpha = 0.5$) | **RSL** ($\lambda_{\text{tv}} = 0.01$) | **Полный предложенный метод RI-YOLO** |
 
 ---
 
