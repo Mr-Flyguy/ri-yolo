@@ -1,0 +1,21 @@
+# Ultralytics YOLO 🚀, AGPL-3.0 License
+# ExDark (Exclusively Dark) Dataset configuration for RI-YOLO
+
+path: datasets/ExDark # dataset root dir
+train: images/train   # train images (relative to 'path')
+val: images/val       # val images (relative to 'path')
+
+# Classes (12 low-light object classes in ExDark)
+names:
+  0: Bicycle
+  1: Boat
+  2: Bottle
+  3: Bus
+  4: Car
+  5: Cat
+  6: Chair
+  7: Cup
+  8: Dog
+  9: Motorbike
+  10: People
+  11: Table
