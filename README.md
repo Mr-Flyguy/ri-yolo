@@ -9,7 +9,7 @@
 [![License](https://img.shields.io/badge/License-AGPL--3.0-orange.svg)](https://www.gnu.org/licenses/agpl-3.0.en.html)
 
 **Официальная PyTorch-реализация метода RI-YOLO**  
-*Физически обоснованная архитектура на базе теории Retinex в латентном пространстве для надежного обнаружения объектов в темноте.*
+_Физически обоснованная архитектура на базе теории Retinex в латентном пространстве для надежного обнаружения объектов в темноте._
 
 </div>
 
@@ -31,6 +31,7 @@
 ### 💡 Концепция RI-YOLO
 
 **RI-YOLO (Retinex-Informed YOLO)** полностью разрешает «парадокс улучшения», исключая шаг явного восстановления пикселей:
+
 - **Пространственное Retinex-разложение признаков (RFDBlock)**: Физическое разделение признаков перенесено непосредственно в глубокое латентное пространство (уровень $P_5$ backbone-сети). Карта признаков адаптивно разделяется на попиксельную карту освещенности $L \in \mathbb{R}^{B \times 1 \times H \times W}$ и карту структурных компонент, масштабируемую обучаемым коэффициентом $\gamma$.
 - **Функция потерь гладкости освещенности (RSL)**: Регуляризация по полной вариации (Total Variation, TV) накладывается на латентную карту освещенности, гарантируя кусочно-гладкое распределение светового потока в соответствии с оптической теорией Retinex.
 - **Нормализованное расстояние Вассерштейна (NWD)**: Моделирует предсказанные и истинные ограничивающие рамки как 2D-гауссианы, обеспечивая стабильные и гладкие градиенты при регрессии малоконтрастных и размытых объектов.
@@ -40,6 +41,7 @@
 ## 🔬 Ключевые научные компоненты
 
 ### 1. Модуль Spatial Retinex Feature Decoupling (RFDBlock)
+
 Для входного тензора признаков $X \in \mathbb{R}^{B \times C_1 \times H \times W}$ блок RFDBlock выполняет выравнивание каналов и пространственное разделение компонент:
 $$F = \text{Conv}_{1\times1}(X)$$
 $$L(x, y) = \sigma(\text{Conv}_{1\times1}(F)) \quad \in \mathbb{R}^{B \times 1 \times H \times W}$$
@@ -48,11 +50,13 @@ $$Y = F + \gamma \cdot S$$
 где $\gamma$ — обучаемый скалярный параметр с начальной инициализацией нулем ($\gamma=0$), что обеспечивает устойчивый старт обучения и исключает дестабилизацию предобученных весов.
 
 ### 2. Регуляризатор Retinex Smoothness Loss (RSL)
+
 Согласно теории Retinex, освещенность сцены меняется плавно в пространстве, а текстура и отражательная способность содержат резкие перепады. RSL накладывает физический априор через TV-регуляризатор:
 $$\mathcal{L}_{RSL} = \frac{1}{H(W-1)} \sum_{i,j} |L_{i,j+1} - L_{i,j}| + \frac{1}{(H-1)W} \sum_{i,j} |L_{i+1,j} - L_{i,j}|$$
 $$\mathcal{L}_{total} = \mathcal{L}_{det} + \lambda_{tv} \cdot \mathcal{L}_{RSL}$$
 
 ### 3. Метрика Normalized Wasserstein Distance (NWD)
+
 При малом размере или размытости темных объектов даже сдвиг на 1–2 пикселя приводит к резкому падению IoU до нуля. NWD представляет рамки в виде 2D-гауссиан $\mathcal{N}(\mu_1, \Sigma_1)$ и $\mathcal{N}(\mu_2, \Sigma_2)$:
 $$W_2^2 = \|\mu_1 - \mu_2\|_2^2 + \frac{(w_1 - w_2)^2 + (h_1 - h_2)^2}{4}$$
 $$\mathcal{NWD} = \exp\left(-\frac{\sqrt{W_2^2 + \epsilon}}{C}\right)$$
@@ -160,13 +164,13 @@ python -c "from ultralytics.utils.downloads import attempt_download_asset; attem
 
 Для детальной количественной оценки вклада каждого предложенного механизма скрипт `run_ablation.py` поочередно запускает 5 конфигураций:
 
-| Этап | Название эксперимента | Архитектура / P5 | Лосс регрессии рамок | Регуляризация освещенности | Назначение и гипотеза |
-| :---: | :--- | :---: | :---: | :---: | :--- |
-| **1** | `1_baseline_yolov8s` | Стандартный C2f | CIoU | Отсутствует | Базовый уровень (Baseline YOLOv8s) |
-| **2** | `2_yolov8s_rfd` | **Spatial RFDBlock** | CIoU | Отсутствует | Влияние латентного Retinex-разделения |
-| **3** | `3_yolov8s_rfd_rsl` | **Spatial RFDBlock** | CIoU | **RSL ($\lambda_{tv}=0.01$)** | Вклад сглаживания карты освещенности |
-| **4** | `4_yolov8s_rfd_nwd` | **Spatial RFDBlock** | **NWD + CIoU ($\alpha=0.5$)** | Отсутствует | Вклад метрики Вассерштейна для рамок |
-| **5** | **`5_full_ri_yolo`** | **Spatial RFDBlock** | **NWD + CIoU ($\alpha=0.5$)** | **RSL ($\lambda_{tv}=0.01$)** | **Полный предложенный метод RI-YOLO** |
+| Этап  | Название эксперимента |   Архитектура / P5   |     Лосс регрессии рамок      |  Регуляризация освещенности   | Назначение и гипотеза                 |
+| :---: | :-------------------- | :------------------: | :---------------------------: | :---------------------------: | :------------------------------------ |
+| **1** | `1_baseline_yolov8s`  |   Стандартный C2f    |             CIoU              |          Отсутствует          | Базовый уровень (Baseline YOLOv8s)    |
+| **2** | `2_yolov8s_rfd`       | **Spatial RFDBlock** |             CIoU              |          Отсутствует          | Влияние латентного Retinex-разделения |
+| **3** | `3_yolov8s_rfd_rsl`   | **Spatial RFDBlock** |             CIoU              | **RSL ($\lambda_{tv}=0.01$)** | Вклад сглаживания карты освещенности  |
+| **4** | `4_yolov8s_rfd_nwd`   | **Spatial RFDBlock** | **NWD + CIoU ($\alpha=0.5$)** |          Отсутствует          | Вклад метрики Вассерштейна для рамок  |
+| **5** | **`5_full_ri_yolo`**  | **Spatial RFDBlock** | **NWD + CIoU ($\alpha=0.5$)** | **RSL ($\lambda_{tv}=0.01$)** | **Полный предложенный метод RI-YOLO** |
 
 ---
 
@@ -180,13 +184,13 @@ python -c "from ultralytics.utils.downloads import attempt_download_asset; attem
 
 ```bash
 python run_ablation.py \
-    --data exdark.yaml \
-    --epochs 100 \
-    --batch 16 \
-    --imgsz 640 \
-    --device 0 \
-    --weights yolov8s.pt \
-    --project runs/ablation_study
+  --data exdark.yaml \
+  --epochs 100 \
+  --batch 16 \
+  --imgsz 640 \
+  --device 0 \
+  --weights yolov8s.pt \
+  --project runs/ablation_study
 ```
 
 ### 2. Запуск выбранных этапов
@@ -222,12 +226,12 @@ model.train(
     batch=16,
     imgsz=640,
     device=0,
-    use_rsl=True,         # Активация Retinex Smoothness Loss
-    use_nwd=True,         # Активация Normalized Wasserstein Distance
-    lambda_tv=0.01,       # Вес TV-регуляризатора
-    nwd_alpha=0.5,        # Баланс NWD и CIoU (50% / 50%)
+    use_rsl=True,  # Активация Retinex Smoothness Loss
+    use_nwd=True,  # Активация Normalized Wasserstein Distance
+    lambda_tv=0.01,  # Вес TV-регуляризатора
+    nwd_alpha=0.5,  # Баланс NWD и CIoU (50% / 50%)
     project="runs/train",
-    name="full_ri_yolo"
+    name="full_ri_yolo",
 )
 ```
 

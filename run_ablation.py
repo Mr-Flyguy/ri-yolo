@@ -10,6 +10,7 @@ Conducts a 5-stage ablation study on ExDark low-light object detection:
 
 import argparse
 from pathlib import Path
+
 from ultralytics import YOLO
 
 
@@ -117,8 +118,10 @@ def run_ablation():
         print(f"Starting Stage {exp['id']}/{len(experiments)}: {exp['name']}")
         print(f"Description: {exp['description']}")
         print(f"Model Config: {exp['model_cfg']}")
-        print(f"Flags: use_rsl={exp['use_rsl']}, use_nwd={exp['use_nwd']}, "
-              f"lambda_tv={exp['lambda_tv']}, nwd_alpha={exp['nwd_alpha']}")
+        print(
+            f"Flags: use_rsl={exp['use_rsl']}, use_nwd={exp['use_nwd']}, "
+            f"lambda_tv={exp['lambda_tv']}, nwd_alpha={exp['nwd_alpha']}"
+        )
         print("#" * 80 + "\n")
 
         # 1. Initialize model architecture from YAML config
@@ -163,15 +166,17 @@ def run_ablation():
                 map50 = results.results_dict.get("metrics/mAP50(B)", 0.0)
                 map50_95 = results.results_dict.get("metrics/mAP50-95(B)", 0.0)
 
-        results_summary.append({
-            "Stage": exp["id"],
-            "Experiment": exp["name"],
-            "RFD": "Yes" if exp["id"] > 1 else "No",
-            "RSL": "Yes" if exp["use_rsl"] else "No",
-            "NWD": "Yes" if exp["use_nwd"] else "No",
-            "mAP50": f"{map50:.4f}",
-            "mAP50-95": f"{map50_95:.4f}",
-        })
+        results_summary.append(
+            {
+                "Stage": exp["id"],
+                "Experiment": exp["name"],
+                "RFD": "Yes" if exp["id"] > 1 else "No",
+                "RSL": "Yes" if exp["use_rsl"] else "No",
+                "NWD": "Yes" if exp["use_nwd"] else "No",
+                "mAP50": f"{map50:.4f}",
+                "mAP50-95": f"{map50_95:.4f}",
+            }
+        )
 
     # Print final summary table
     print("\n" + "=" * 80)
@@ -180,7 +185,9 @@ def run_ablation():
     print(f"{'Stage':<6} | {'Experiment':<22} | {'RFD':<5} | {'RSL':<5} | {'NWD':<5} | {'mAP50':<8} | {'mAP50-95':<8}")
     print("-" * 80)
     for r in results_summary:
-        print(f"{r['Stage']:<6} | {r['Experiment']:<22} | {r['RFD']:<5} | {r['RSL']:<5} | {r['NWD']:<5} | {r['mAP50']:<8} | {r['mAP50-95']:<8}")
+        print(
+            f"{r['Stage']:<6} | {r['Experiment']:<22} | {r['RFD']:<5} | {r['RSL']:<5} | {r['NWD']:<5} | {r['mAP50']:<8} | {r['mAP50-95']:<8}"
+        )
     print("=" * 80)
 
 

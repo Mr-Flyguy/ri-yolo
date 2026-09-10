@@ -53,11 +53,11 @@ from .block import (
     ImagePoolingAttn,
     MaxSigmoidAttnBlock,
     Proto,
-    RFDBlock,
     RepC3,
     RepNCSPELAN4,
     RepVGGDW,
     ResNetLayer,
+    RFDBlock,
     SCDown,
     TorchVision,
 )
