@@ -171,6 +171,42 @@ def bbox_iou(
     return iou  # IoU
 
 
+def bbox_nwd(
+    box1: torch.Tensor,
+    box2: torch.Tensor,
+    xywh: bool = False,
+    constant: float = 12.8,
+    eps: float = 1e-7,
+) -> torch.Tensor:
+    """Calculate Normalized Gaussian Wasserstein Distance (NWD) between bounding boxes.
+
+    Args:
+        box1 (torch.Tensor): Predicted bounding boxes, shape (..., 4).
+        box2 (torch.Tensor): Target bounding boxes, shape (..., 4).
+        xywh (bool): True if boxes are in (cx, cy, w, h) format, False if (x1, y1, x2, y2).
+        constant (float): Normalization constant C (typically 12.8 for scale-invariant matching).
+        eps (float): Small epsilon value to avoid zero division or NaN gradients in sqrt.
+
+    Returns:
+        (torch.Tensor): NWD similarity values in range (0, 1].
+    """
+    if xywh:
+        cx1, cy1, w1, h1 = box1.chunk(4, -1)
+        cx2, cy2, w2, h2 = box2.chunk(4, -1)
+    else:
+        b1_x1, b1_y1, b1_x2, b1_y2 = box1.chunk(4, -1)
+        b2_x1, b2_y1, b2_x2, b2_y2 = box2.chunk(4, -1)
+        cx1, cy1 = (b1_x1 + b1_x2) / 2, (b1_y1 + b1_y2) / 2
+        cx2, cy2 = (b2_x1 + b2_x2) / 2, (b2_y1 + b2_y2) / 2
+        w1, h1 = (b1_x2 - b1_x1).clamp(min=eps), (b1_y2 - b1_y1).clamp(min=eps)
+        w2, h2 = (b2_x2 - b2_x1).clamp(min=eps), (b2_y2 - b2_y1).clamp(min=eps)
+
+    # W_2^2 = (cx1 - cx2)^2 + (cy1 - cy2)^2 + ((w1 - w2)^2 + (h1 - h2)^2) / 4
+    w2_sq = (cx1 - cx2).pow(2) + (cy1 - cy2).pow(2) + ((w1 - w2).pow(2) + (h1 - h2).pow(2)) / 4.0
+    w2 = torch.sqrt(w2_sq + eps)
+    return torch.exp(-w2 / constant).clamp(min=0.0, max=1.0)
+
+
 def mask_iou(mask1: torch.Tensor, mask2: torch.Tensor, eps: float = 1e-7) -> torch.Tensor:
     """Calculate masks IoU.
 

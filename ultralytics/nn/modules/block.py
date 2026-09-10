@@ -2078,3 +2078,32 @@ class RealNVP(nn.Module):
         z, log_det = self.backward_p(x)
         # Closed-form log N(z; 0, I) in 2-D; fp32 keeps z**2 from overflowing under AMP.
         return -0.5 * (z.float() ** 2).sum(-1) - math.log(2 * math.pi) + log_det
+
+
+class RFDBlock(nn.Module):
+    """Spatial Retinex Feature Decoupling Block for Low-Light Detection."""
+
+    def __init__(self, c1, c2):
+        super().__init__()
+        self.cv1 = Conv(c1, c2, 1, 1)
+
+        # Попиксельная карта освещенности L(x, y) размерности (B, 1, H, W)
+        self.ill_estimator = nn.Sequential(
+            nn.Conv2d(c2, 1, kernel_size=1, bias=False),
+            nn.Sigmoid(),
+        )
+
+        self.structure_conv = Conv(c2, c2, 3, 1)
+        self.gamma = nn.Parameter(torch.zeros(1))
+        self._illumination_map = None
+
+    def forward(self, x):
+        feat = self.cv1(x)
+        illumination_mask = self.ill_estimator(feat)  # (B, 1, H, W)
+        self._illumination_map = illumination_mask
+        structure = feat * (1.0 - illumination_mask)
+        structure = self.structure_conv(structure)
+        return feat + self.gamma * structure
+
+
+

@@ -217,6 +217,7 @@ CFG_FLOAT_KEYS = frozenset(
         "time",
         "workspace",
         "batch",
+        "lambda_tv",
     }
 )
 CFG_FRACTION_KEYS = frozenset(
@@ -247,6 +248,7 @@ CFG_FRACTION_KEYS = frozenset(
         "fraction",
         "multi_scale",
         "dlam",
+        "nwd_alpha",
     }
 )
 CFG_INT_KEYS = frozenset(
@@ -305,6 +307,8 @@ CFG_BOOL_KEYS = frozenset(
         "profile",
         "channels_last",
         "cls_remap",
+        "use_rsl",
+        "use_nwd",
     }
 )
 CFG_STR_KEYS = frozenset({"optimizer", "split", "copy_paste_mode", "auto_augment"})
