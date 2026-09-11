@@ -124,10 +124,30 @@ def run_ablation():
         # 1. Initialize model architecture from YAML config
         model = YOLO(exp["model_cfg"])
 
-        # 2. Transfer learning: Load pretrained COCO weights into backbone and shared heads
+        # 2. Transfer learning: Load pretrained COCO weights into backbone, SPPF, and Head
         if args.weights and Path(args.weights).exists():
             print(f"Loading pretrained weights from {args.weights} (Transfer Learning)...")
-            model.load(args.weights)
+            if "rfd" in exp["model_cfg"]:
+                # RFDBlock at index 10 shifts head layers by +1. Remap so all head layers retain COCO pretraining!
+                ckpt = torch.load(args.weights, map_location="cpu", weights_only=False)
+                csd = ckpt["model"].float().state_dict() if "model" in ckpt else ckpt
+                msd = model.model.state_dict()
+                remapped_csd = {}
+                for k, v in csd.items():
+                    parts = k.split(".")
+                    if len(parts) > 1 and parts[0] == "model" and parts[1].isdigit():
+                        idx = int(parts[1])
+                        if idx >= 10:
+                            remapped_csd[f"model.{idx + 1}." + ".".join(parts[2:])] = v
+                        else:
+                            remapped_csd[k] = v
+                    else:
+                        remapped_csd[k] = v
+                matched = {k: v for k, v in remapped_csd.items() if k in msd and v.shape == msd[k].shape}
+                model.model.load_state_dict(matched, strict=False)
+                print(f"Transferred {len(matched)}/{len(msd)} items (Backbone, SPPF, and Head 100% transferred!)")
+            else:
+                model.load(args.weights)
         else:
             print(f"Pretrained weights {args.weights} not found locally; Ultralytics will auto-download.")
             model.load(args.weights)

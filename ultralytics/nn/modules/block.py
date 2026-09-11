@@ -2100,10 +2100,25 @@ class RFDBlock(nn.Module):
     def forward(self, x):
         feat = self.cv1(x)
         illumination_mask = self.ill_estimator(feat)  # (B, 1, H, W)
-        self._illumination_map = illumination_mask
+        if self.training:
+            self._illumination_map = illumination_mask
+        else:
+            self._illumination_map = None
         structure = feat * (1.0 - illumination_mask)
         structure = self.structure_conv(structure)
         return feat + self.gamma * structure
+
+    def __deepcopy__(self, memo):
+        import copy
+        cls = self.__class__
+        result = cls.__new__(cls)
+        memo[id(self)] = result
+        for k, v in self.__dict__.items():
+            if k == "_illumination_map":
+                setattr(result, k, None)
+            else:
+                setattr(result, k, copy.deepcopy(v, memo))
+        return result
 
 
 
