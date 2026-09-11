@@ -2106,7 +2106,7 @@ class RFDBlock(nn.Module):
             self._illumination_map = None
         structure = feat * (1.0 - illumination_mask)
         structure = self.structure_conv(structure)
-        return feat + self.gamma * structure
+        return x + self.gamma * structure
 
     def __deepcopy__(self, memo):
         import copy

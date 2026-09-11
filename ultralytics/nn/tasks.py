@@ -323,6 +323,22 @@ class BaseModel(torch.nn.Module):
         # Remap classification head rows by class-name when nc differs (e.g. Obj365 -> COCO fine-tune)
         cls_remapped = self._remap_cls_by_names(csd, model, verbose=verbose)
 
+        # Remap head layer indices if current model has RFDBlock inserted at layer 10
+        has_rfd = any(m.__class__.__name__ == "RFDBlock" for m in self.model.modules())
+        if has_rfd and not any("10.structure_conv" in k for k in csd.keys()):
+            remapped_csd = {}
+            for k, v in csd.items():
+                parts = k.split(".")
+                if len(parts) > 1 and parts[0] == "model" and parts[1].isdigit():
+                    idx = int(parts[1])
+                    if idx >= 10:
+                        remapped_csd[f"model.{idx + 1}." + ".".join(parts[2:])] = v
+                    else:
+                        remapped_csd[k] = v
+                else:
+                    remapped_csd[k] = v
+            csd = remapped_csd
+
         updated_csd = intersect_dicts(csd, self.state_dict())  # intersect
         self.load_state_dict(updated_csd, strict=False)  # load
         len_updated_csd = len(updated_csd) + cls_remapped
