@@ -125,7 +125,13 @@ def run_ablation():
         model = YOLO(exp["model_cfg"])
 
         # 2. Transfer learning: Load pretrained COCO weights into backbone, SPPF, and Head
-        if args.weights and Path(args.weights).exists():
+        if args.weights:
+            weights_path = Path(args.weights)
+            if not weights_path.exists():
+                print(f"Pretrained weights {args.weights} not found locally; auto-downloading...")
+                from ultralytics.utils.downloads import attempt_download_asset
+                attempt_download_asset(args.weights)
+
             print(f"Loading pretrained weights from {args.weights} (Transfer Learning)...")
             if "rfd" in exp["model_cfg"]:
                 # RFDBlock at index 10 shifts head layers by +1. Remap so all head layers retain COCO pretraining!
@@ -148,9 +154,6 @@ def run_ablation():
                 print(f"Transferred {len(matched)}/{len(msd)} items (Backbone, SPPF, and Head 100% transferred!)")
             else:
                 model.load(args.weights)
-        else:
-            print(f"Pretrained weights {args.weights} not found locally; Ultralytics will auto-download.")
-            model.load(args.weights)
 
         # 3. Launch training with ablation flags passed directly via kwargs
         train_args = {
