@@ -213,11 +213,18 @@ def train_single_run(run_name, exp_info, args):
         "gamma_final": gamma_val,
     }
 
-    with open(summary_path, "a", newline="") as f:
+    # Update or append row in summary.csv (prevents duplicate entries from smoke tests)
+    existing_rows = []
+    if summary_path.exists():
+        with open(summary_path, "r", newline="") as f:
+            reader = csv.DictReader(f)
+            existing_rows = [r for r in reader if r.get("run") != run_name]
+    existing_rows.append(row)
+
+    with open(summary_path, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=list(row.keys()))
-        if is_new:
-            writer.writeheader()
-        writer.writerow(row)
+        writer.writeheader()
+        writer.writerows(existing_rows)
 
     print(f"[SUCCESS] Completed {run_name}! mAP50: {map50:.4f}, mAP50-95: {map50_95:.4f}, gamma: {gamma_val}")
 
