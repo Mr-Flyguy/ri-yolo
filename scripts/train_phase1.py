@@ -16,10 +16,7 @@ ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-try:
-    from scripts.rfd_callbacks import add_rfd_logging
-except ImportError:
-    from rfd_callbacks import add_rfd_logging
+from scripts.rfd_callbacks import add_rfd_logging
 
 from ultralytics import YOLO
 
