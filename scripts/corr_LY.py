@@ -43,7 +43,9 @@ def main():
     rfd.train()  # Ensure _illumination_map is recorded in forward pass
 
     buf = {}
-    rfd.register_forward_hook(lambda m, i, o: buf.__setitem__("L", getattr(m, "_illumination_map", None)))
+    rfd.register_forward_hook(
+        lambda m, i, o: buf.__setitem__("L", getattr(m, "_ill_stat", getattr(m, "_illumination_map", None)))
+    )
 
     # Parse image paths
     if os.path.isfile(args.images):
