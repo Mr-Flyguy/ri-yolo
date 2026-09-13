@@ -113,9 +113,12 @@ dlog: 1.0 # (float) depth log (SILog) loss gain (depth tasks)
 dgrad: 0.5 # (float) depth gradient loss gain (depth tasks)
 dlam: 1.0 # (float) depth SILog variance focus: 1.0=scale-invariant, 0.0=log-RMSE (depth tasks)
 use_rsl: False # (bool) enable Retinex Smoothness Loss (TV loss on RFD illumination map)
+lambda_tv: 0.001 # (float) weight for Retinex Smoothness Loss (TV loss)
 use_nwd: False # (bool) enable Normalized Wasserstein Distance for bbox regression
-lambda_tv: 0.01 # (float) weight for Retinex Smoothness Loss (TV loss)
-nwd_alpha: 0.5 # (float) weight balance between NWD and CIoU (1.0 = pure NWD, 0.0 = pure CIoU)
+nwd_alpha: 0.2 # (float) weight balance between NWD and CIoU (1.0 = pure NWD, 0.0 = pure CIoU)
+nwd_c: 12.8 # (float) normalization scale constant for NWD
+nwd_mode: abs # (str) NWD calculation mode ('abs', 'scaleinv', 'sizegate')
+size_tau: 8.0 # (float) characteristic size decay temperature for sizegate NWD mode
 nbs: 64 # (int) nominal batch size used for loss normalization
 hsv_h: 0.015 # (float) HSV hue augmentation fraction
 hsv_s: 0.7 # (float) HSV saturation augmentation fraction

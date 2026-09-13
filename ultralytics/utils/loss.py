@@ -111,12 +111,23 @@ class DFLoss(nn.Module):
 class BboxLoss(nn.Module):
     """Criterion class for computing training losses for bounding boxes."""
 
-    def __init__(self, reg_max: int = 16, use_nwd: bool = False, nwd_alpha: float = 0.5):
+    def __init__(
+        self,
+        reg_max: int = 16,
+        use_nwd: bool = False,
+        nwd_alpha: float = 0.2,
+        nwd_c: float = 12.8,
+        nwd_mode: str = "abs",
+        size_tau: float = 8.0,
+    ):
         """Initialize the BboxLoss module with regularization maximum, DFL, and optional NWD settings."""
         super().__init__()
         self.dfl_loss = DFLoss(reg_max) if reg_max > 1 else None
         self.use_nwd = use_nwd
         self.nwd_alpha = nwd_alpha
+        self.nwd_c = nwd_c
+        self.nwd_mode = nwd_mode
+        self.size_tau = size_tau
 
     def forward(
         self,
@@ -134,8 +145,19 @@ class BboxLoss(nn.Module):
         weight = target_scores[fg_mask].sum(-1, keepdim=True)
         iou = bbox_iou(pred_bboxes[fg_mask], target_bboxes[fg_mask], xywh=False, CIoU=True)
         if getattr(self, "use_nwd", False):
-            nwd = bbox_nwd(pred_bboxes[fg_mask], target_bboxes[fg_mask], xywh=False)
-            alpha = getattr(self, "nwd_alpha", 0.5)
+            mode = getattr(self, "nwd_mode", "abs")
+            eval_mode = "scaleinv" if mode == "scaleinv" else "abs"
+            constant = getattr(self, "nwd_c", 12.8)
+            nwd = bbox_nwd(pred_bboxes[fg_mask], target_bboxes[fg_mask], xywh=False, constant=constant, mode=eval_mode)
+
+            if mode == "sizegate":
+                tgt = target_bboxes[fg_mask]
+                size = torch.sqrt((tgt[:, 2] - tgt[:, 0]).clamp(min=1e-4) * (tgt[:, 3] - tgt[:, 1]).clamp(min=1e-4))
+                size_tau = getattr(self, "size_tau", 8.0)
+                alpha = self.nwd_alpha * torch.exp(-size / size_tau)
+            else:
+                alpha = self.nwd_alpha
+
             loss_box = alpha * (1.0 - nwd) + (1.0 - alpha) * (1.0 - iou)
             loss_iou = (loss_box * weight).sum() / target_scores_sum
         else:
@@ -379,10 +401,20 @@ class v8DetectionLoss:
         )
         self.model = model
         self.use_rsl = self.hyp.get("use_rsl", False) if isinstance(self.hyp, dict) else getattr(self.hyp, "use_rsl", False)
-        self.lambda_tv = self.hyp.get("lambda_tv", 0.01) if isinstance(self.hyp, dict) else getattr(self.hyp, "lambda_tv", 0.01)
+        self.lambda_tv = self.hyp.get("lambda_tv", 0.001) if isinstance(self.hyp, dict) else getattr(self.hyp, "lambda_tv", 0.001)
         self.use_nwd = self.hyp.get("use_nwd", False) if isinstance(self.hyp, dict) else getattr(self.hyp, "use_nwd", False)
-        self.nwd_alpha = self.hyp.get("nwd_alpha", 0.5) if isinstance(self.hyp, dict) else getattr(self.hyp, "nwd_alpha", 0.5)
-        self.bbox_loss = BboxLoss(m.reg_max, use_nwd=self.use_nwd, nwd_alpha=self.nwd_alpha).to(device)
+        self.nwd_alpha = self.hyp.get("nwd_alpha", 0.2) if isinstance(self.hyp, dict) else getattr(self.hyp, "nwd_alpha", 0.2)
+        self.nwd_c = self.hyp.get("nwd_c", 12.8) if isinstance(self.hyp, dict) else getattr(self.hyp, "nwd_c", 12.8)
+        self.nwd_mode = self.hyp.get("nwd_mode", "abs") if isinstance(self.hyp, dict) else getattr(self.hyp, "nwd_mode", "abs")
+        self.size_tau = self.hyp.get("size_tau", 8.0) if isinstance(self.hyp, dict) else getattr(self.hyp, "size_tau", 8.0)
+        self.bbox_loss = BboxLoss(
+            m.reg_max,
+            use_nwd=self.use_nwd,
+            nwd_alpha=self.nwd_alpha,
+            nwd_c=self.nwd_c,
+            nwd_mode=self.nwd_mode,
+            size_tau=self.size_tau,
+        ).to(device)
         self.proj = torch.arange(m.reg_max, dtype=torch.float, device=device)
 
     def preprocess(self, targets: torch.Tensor, batch_size: int, scale_tensor: torch.Tensor) -> torch.Tensor:
@@ -496,7 +528,7 @@ class v8DetectionLoss:
         if hasattr(self, "model") and self.model is not None:
             for m in self.model.modules():
                 if hasattr(m, "_illumination_map") and m._illumination_map is not None:
-                    ill = m._illumination_map
+                    ill = m._illumination_map.float()
                     tv_h = (
                         torch.abs(ill[:, :, 1:, :] - ill[:, :, :-1, :]).mean()
                         if ill.shape[2] > 1
@@ -524,11 +556,20 @@ class v8DetectionLoss:
         if use_rsl:
             lambda_tv = getattr(self, "lambda_tv", None)
             if lambda_tv is None:
-                lambda_tv = self.hyp.get("lambda_tv", 0.01) if isinstance(self.hyp, dict) else getattr(self.hyp, "lambda_tv", 0.01)
+                lambda_tv = self.hyp.get("lambda_tv", 0.001) if isinstance(self.hyp, dict) else getattr(self.hyp, "lambda_tv", 0.001)
             tv_loss = self.get_tv_loss()
             batch_size = feats["boxes"].shape[0]
             loss = torch.cat([loss, (lambda_tv * tv_loss * batch_size).unsqueeze(0)])
             loss_items["rsl_loss"] = tv_loss.detach()
+
+        # Clean up illumination buffers after loss computation to release autograd graph (P0-3)
+        if hasattr(self, "model") and self.model is not None:
+            from ultralytics.utils.torch_utils import de_parallel
+
+            for m in de_parallel(self.model).modules():
+                if hasattr(m, "_illumination_map"):
+                    m._illumination_map = None
+
         return loss, loss_items
 
     def loss(

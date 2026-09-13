@@ -176,7 +176,8 @@ def bbox_nwd(
     box2: torch.Tensor,
     xywh: bool = False,
     constant: float = 12.8,
-    eps: float = 1e-7,
+    mode: str = "abs",
+    eps: float = 1e-4,
 ) -> torch.Tensor:
     """Calculate Normalized Gaussian Wasserstein Distance (NWD) between bounding boxes.
 
@@ -185,6 +186,7 @@ def bbox_nwd(
         box2 (torch.Tensor): Target bounding boxes, shape (..., 4).
         xywh (bool): True if boxes are in (cx, cy, w, h) format, False if (x1, y1, x2, y2).
         constant (float): Normalization constant C (typically 12.8 for scale-invariant matching).
+        mode (str): Evaluation mode ('abs' or 'scaleinv').
         eps (float): Small epsilon value to avoid zero division or NaN gradients in sqrt.
 
     Returns:
@@ -203,8 +205,15 @@ def bbox_nwd(
 
     # W_2^2 = (cx1 - cx2)^2 + (cy1 - cy2)^2 + ((w1 - w2)^2 + (h1 - h2)^2) / 4
     w2_sq = (cx1 - cx2).pow(2) + (cy1 - cy2).pow(2) + ((w1 - w2).pow(2) + (h1 - h2).pow(2)) / 4.0
-    w2 = torch.sqrt(w2_sq + eps)
-    return torch.exp(-w2 / constant).clamp(min=0.0, max=1.0)
+    w2_dist = torch.sqrt(w2_sq + eps * eps)
+
+    if mode == "abs":
+        return torch.exp(-w2_dist / constant)
+    elif mode == "scaleinv":
+        s = torch.sqrt(w2 * h2).clamp(min=eps)
+        return torch.exp(-(w2_dist / s) / constant)
+    else:
+        raise ValueError(f"Unknown NWD mode: {mode}. Supported modes: ['abs', 'scaleinv']")
 
 
 def mask_iou(mask1: torch.Tensor, mask2: torch.Tensor, eps: float = 1e-7) -> torch.Tensor:

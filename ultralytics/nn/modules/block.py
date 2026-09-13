@@ -2085,6 +2085,7 @@ class RFDBlock(nn.Module):
 
     def __init__(self, c1, c2):
         super().__init__()
+        assert c1 == c2, f"RFDBlock requires c1 == c2, got c1={c1}, c2={c2}"
         self.cv1 = Conv(c1, c2, 1, 1)
 
         # Попиксельная карта освещенности L(x, y) размерности (B, 1, H, W)
@@ -2096,14 +2097,17 @@ class RFDBlock(nn.Module):
         self.structure_conv = Conv(c2, c2, 3, 1)
         self.gamma = nn.Parameter(torch.zeros(1))
         self._illumination_map = None
+        self._ill_stat = None
 
     def forward(self, x):
         feat = self.cv1(x)
         illumination_mask = self.ill_estimator(feat)  # (B, 1, H, W)
         if self.training:
             self._illumination_map = illumination_mask
+            self._ill_stat = illumination_mask.detach()
         else:
             self._illumination_map = None
+            self._ill_stat = illumination_mask.detach()
         structure = feat * (1.0 - illumination_mask)
         structure = self.structure_conv(structure)
         return x + self.gamma * structure
@@ -2114,11 +2118,27 @@ class RFDBlock(nn.Module):
         result = cls.__new__(cls)
         memo[id(self)] = result
         for k, v in self.__dict__.items():
-            if k == "_illumination_map":
+            if k in ("_illumination_map", "_ill_stat"):
                 setattr(result, k, None)
             else:
                 setattr(result, k, copy.deepcopy(v, memo))
         return result
+
+
+class RFDBlockNoGate(nn.Module):
+    """Capacity control: identical topology to RFDBlock, but gate replaced by constant 0.5."""
+
+    def __init__(self, c1, c2):
+        super().__init__()
+        assert c1 == c2, f"RFDBlockNoGate requires c1 == c2, got c1={c1}, c2={c2}"
+        self.cv1 = Conv(c1, c2, 1, 1)
+        self.structure_conv = Conv(c2, c2, 3, 1)
+        self.gamma = nn.Parameter(torch.zeros(1))
+
+    def forward(self, x):
+        feat = self.cv1(x)
+        return x + self.gamma * self.structure_conv(feat * 0.5)
+
 
 
 

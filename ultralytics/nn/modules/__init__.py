@@ -54,6 +54,7 @@ from .block import (
     MaxSigmoidAttnBlock,
     Proto,
     RFDBlock,
+    RFDBlockNoGate,
     RepC3,
     RepNCSPELAN4,
     RepVGGDW,
