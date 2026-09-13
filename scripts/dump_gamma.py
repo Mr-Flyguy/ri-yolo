@@ -26,10 +26,30 @@ def main():
     rows = []
     matched_files = []
     for pat in args.ckpt:
-        matched_files.extend(sorted(glob.glob(pat)))
+        norm_pat = os.path.normpath(pat)
+        matches = glob.glob(pat, recursive=True)
+        if not matches:
+            matches = glob.glob(norm_pat, recursive=True)
+        if not matches and "runs" in pat:
+            # Fallback search for nested directories like runs/detect/train/weights/best.pt
+            alt_pat = os.path.join("runs", "**", os.path.basename(pat))
+            matches = glob.glob(alt_pat, recursive=True)
+            if not matches:
+                matches = glob.glob("runs/**/*.pt", recursive=True)
+        matched_files.extend(matches)
+
+    # Remove duplicates while preserving order
+    matched_files = list(dict.fromkeys(sorted(matched_files)))
 
     if not matched_files:
         print(f"[ERROR] No checkpoint files matched pattern: {args.ckpt}")
+        fallback = glob.glob("runs/**/*.pt", recursive=True) + glob.glob("weights/**/*.pt", recursive=True)
+        if fallback:
+            print(f"[INFO] Found these .pt checkpoints in workspace:\n  " + "\n  ".join(sorted(set(fallback))))
+            print("[INFO] Try specifying one directly, e.g.:")
+            print(f"  python scripts/dump_gamma.py --ckpt {sorted(set(fallback))[0]}")
+        else:
+            print("[INFO] No .pt checkpoint files found anywhere under 'runs/' or 'weights/'.")
         return
 
     print(f"\n{'Checkpoint':<60} | {'Layer Key':<35} | {'Gamma':<10}")
