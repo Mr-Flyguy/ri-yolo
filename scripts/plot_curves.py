@@ -36,8 +36,33 @@ def main():
     if n_cols == 1:
         axes = [axes]
 
-    frames = []
+    from pathlib import Path
+
+    run_dirs = []
     for r in args.runs:
+        if r.lower() in ("auto", "runs", "runs/"):
+            found = [str(p.parent) for p in Path("runs").glob("**/results.csv")]
+            run_dirs.extend(found)
+        elif os.path.exists(r):
+            run_dirs.append(r)
+        else:
+            # Try finding r as a substring under runs/
+            matches = [str(p.parent) for p in Path("runs").glob(f"**/{r}/**/results.csv")]
+            if matches:
+                run_dirs.extend(matches)
+            else:
+                matches_dir = [str(p) for p in Path("runs").glob(f"**/{r}")]
+                if matches_dir:
+                    run_dirs.extend(matches_dir)
+                else:
+                    print(f"[WARNING] Run directory not found: {r}")
+
+    # Deduplicate while preserving order
+    seen = set()
+    run_dirs = [x for x in run_dirs if not (x in seen or seen.add(x))]
+
+    frames = []
+    for r in run_dirs:
         csv_path = os.path.join(r, "results.csv")
         if not os.path.exists(csv_path):
             print(f"[WARNING] Skipping {r}: {csv_path} not found")
@@ -72,7 +97,7 @@ def main():
 
     print("\n--- Summary Checkpoints ---")
     m_col = "metrics/mAP50(B)"
-    for r in args.runs:
+    for r in run_dirs:
         csv_path = os.path.join(r, "results.csv")
         if not os.path.exists(csv_path):
             continue
