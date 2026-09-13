@@ -105,17 +105,17 @@
 ### E6′: Сетка коэффициента регуляризации $\lambda_{tv}$ (4 запуска, seed=0)
 | ID | Run Name | $\lambda_{tv}$ | $std(L)$ | mAP@50 | mAP@50-95 | Статус |
 |---|---|---|---|---|---|---|
-| E6′-1 | `e6p__lam-1e-4__s0` | $10^{-4}$ | | | | ⬜ Pending |
-| E6′-2 | `e6p__lam-3e-3__s0` | $3 \times 10^{-3}$ | | | | ⬜ Pending |
-| E6′-3 | `e6p__lam-1e-2__s0` | $10^{-2}$ | | | | ⬜ Pending |
-| E6′-4 | `e6p__lam-3e-2__s0` | $3 \times 10^{-2}$ | | | | ⬜ Pending |
+| E6′-1 | `e6p__lam-1e-4__s0` | $10^{-4}$ (0.0001) | | | | ⬜ Pending |
+| E6′-2 | `e6p__lam-1e-3__s0` | $10^{-3}$ (0.001) | | | | ⬜ Pending |
+| E6′-3 | `e6p__lam-1e-2__s0` | $10^{-2}$ (0.01) | | | | ⬜ Pending |
+| E6′-4 | `e6p__lam-1e-1__s0` | $10^{-1}$ (0.1) | | | | ⬜ Pending |
 
 ### E7′: Варианты формулировки метрики рамок (3 запуска, seed=0)
 | ID | Run Name | Режим NWD | Константа $C$ / $\tau$ | mAP@50 | mAP@50 (small) | Статус |
 |---|---|---|---|---|---|---|
-| E7′-1 | `e7p__nwd-calibC__s0` | `abs` | $C_{calib}$ | | | ⬜ Pending |
-| E7′-2 | `e7p__nwd-scaleinv__s0`| `scaleinv` | $C_{calib}$ | | | ⬜ Pending |
-| E7′-3 | `e7p__nwd-sizegate__s0`| `sizegate` | $\tau_{calib}$ | | | ⬜ Pending |
+| E7′-1 | `e7p__nwd-calib__s0` | `abs` | $C = 10.24$ | | | ⬜ Pending |
+| E7′-2 | `e7p__nwd-scaleinv__s0`| `scaleinv` | $C = 0.3$ | | | ⬜ Pending |
+| E7′-3 | `e7p__nwd-sizegate__s0`| `sizegate` | $C = 10.24, \tau = 5.12$ | | | ⬜ Pending |
 
 ---
 
