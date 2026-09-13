@@ -564,9 +564,8 @@ class v8DetectionLoss:
 
         # Clean up illumination buffers after loss computation to release autograd graph (P0-3)
         if hasattr(self, "model") and self.model is not None:
-            from ultralytics.utils.torch_utils import de_parallel
-
-            for m in de_parallel(self.model).modules():
+            model = getattr(self.model, "module", self.model)
+            for m in model.modules():
                 if hasattr(m, "_illumination_map"):
                     m._illumination_map = None
 
