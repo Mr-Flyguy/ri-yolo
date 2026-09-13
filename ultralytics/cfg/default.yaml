@@ -116,9 +116,9 @@ use_rsl: False # (bool) enable Retinex Smoothness Loss (TV loss on RFD illuminat
 lambda_tv: 0.001 # (float) weight for Retinex Smoothness Loss (TV loss)
 use_nwd: False # (bool) enable Normalized Wasserstein Distance for bbox regression
 nwd_alpha: 0.2 # (float) weight balance between NWD and CIoU (1.0 = pure NWD, 0.0 = pure CIoU)
-nwd_c: 12.8 # (float) normalization scale constant for NWD
+nwd_c: 10.24 # (float) normalization scale constant for NWD (calibrated on ExDark P4-stride)
 nwd_mode: abs # (str) NWD calculation mode ('abs', 'scaleinv', 'sizegate')
-size_tau: 8.0 # (float) characteristic size decay temperature for sizegate NWD mode
+size_tau: 5.12 # (float) characteristic size decay temperature for sizegate NWD mode (calibrated on ExDark)
 nbs: 64 # (int) nominal batch size used for loss normalization
 hsv_h: 0.015 # (float) HSV hue augmentation fraction
 hsv_s: 0.7 # (float) HSV saturation augmentation fraction

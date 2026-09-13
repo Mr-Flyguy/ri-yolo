@@ -1,0 +1,21 @@
+============================================================
+  EXDARK BOUNDING BOX CALIBRATION SUMMARY (imgsz=640)
+============================================================
+Total objects parsed   : 9,731
+Mean dimension         : 163.89 px
+Median dimension       : 126.07 px
+Percentiles [10/50/90] : [44.6 / 126.1 / 346.2] px
+------------------------------------------------------------
+Scale Categories (COCO definition):
+  Small  (< 32 px)     : 3.1%
+  Medium (32 - 96 px)  : 34.7%
+  Large  (>= 96 px)    : 62.2%
+------------------------------------------------------------
+Feature-stride normalized mean box scale:
+  P3 (stride  8) : 20.49 grid units (C_P3 = 20.49)
+  P4 (stride 16) : 10.24 grid units (C_P4 = 10.24)
+  P5 (stride 32) : 5.12 grid units (C_P5 = 5.12)
+------------------------------------------------------------
+>>> RECOMMENDED nwd_c (P4-anchored) = 10.24   (baseline arbitrary default: 12.8)
+>>> RECOMMENDED size_tau (sizegate) = 5.12    (baseline arbitrary default: 8.0)
+============================================================

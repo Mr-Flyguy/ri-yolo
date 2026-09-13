@@ -1,7 +1,7 @@
 model,params_M,gflops,batch,half,lat_med_ms,lat_p95_ms,fps
-yolov8s.yaml,11.167,28.81,1,0,689.35,847.66,1.5
-yolov8s-rfd-p3.yaml,11.331,30.92,1,0,723.87,964.95,1.4
-yolov8s-rfd-p4.yaml,11.823,30.92,1,0,805.7,1021.77,1.2
-yolov8s-rfd-presppf.yaml,13.791,30.91,1,0,797.12,1141.08,1.3
-yolov8s-rfd-postsppf.yaml,13.791,30.91,1,0,751.45,1013.69,1.3
-yolov8s-capctrl.yaml,13.79,30.91,1,0,756.86,1050.37,1.3
+yolov8s.yaml,11.167,28.81,1,0,497.15,737.36,2.0
+yolov8s-rfd-p3.yaml,11.331,30.92,1,0,700.11,940.38,1.4
+yolov8s-rfd-p4.yaml,11.823,30.92,1,0,566.55,847.84,1.8
+yolov8s-rfd-presppf.yaml,13.791,30.91,1,0,535.25,923.73,1.9
+yolov8s-rfd-postsppf.yaml,13.791,30.91,1,0,522.67,840.22,1.9
+yolov8s-capctrl.yaml,13.79,30.91,1,0,541.69,805.76,1.8

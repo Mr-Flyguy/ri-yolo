@@ -151,6 +151,7 @@ dmypy.json
 /datasets
 runs/*
 !runs/*/
+runs/detect/
 !runs/**/args.yaml
 !runs/**/results.csv
 !runs/**/rfd_log.csv
