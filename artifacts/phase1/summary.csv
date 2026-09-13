@@ -1,0 +1,2 @@
+run,group,model,seed,epochs,mAP50,mAP50_95,gamma_final
+e3p__pos-postsppf__s0,E3,ultralytics/cfg/models/v8/yolov8s-rfd-postsppf.yaml,0,1,0.2894,0.1445,+0.001813
