@@ -7,7 +7,6 @@ predictions when gamma parameter is zero, confirming correct weight transfer and
 
 import argparse
 import sys
-import pytest
 import torch
 from ultralytics import YOLO
 
@@ -19,8 +18,15 @@ CFGS = [
     "yolov8s-capctrl.yaml",
 ]
 
+try:
+    import pytest
+    _parametrize = pytest.mark.parametrize("cfg", CFGS)
+except ImportError:
+    def _parametrize(fn):
+        return fn
 
-@pytest.mark.parametrize("cfg", CFGS)
+
+@_parametrize
 def test_identity_at_init(cfg, weights="yolov8s.pt", atol=1e-4):
     """Test that model output with RFD module matches baseline output at initialization."""
     device = "cuda" if torch.cuda.is_available() else "cpu"
