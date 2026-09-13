@@ -6,11 +6,11 @@
 
 ## 📊 Dashboard текущего статуса
 
-- **Текущая фаза:** `Фаза 1: Структурная аблация и надежность` (Фаза 0 полностью завершена)
-- **Прогресс по GPU-запускам:** `0 / 23` (Smoke test на 1 эпоху успешно пройден)
-- **Блокирующие проверки (Sanity Checks):** `6 / 6 ВСЕ ПРОЙДЕНЫ` (CP-0.2: Curves, CP-0.3: Gamma, CP-0.4: Identity, CP-0.5: Retinex Semantics, CP-0.6: Calibration, CP-0.7: Hardware Benchmark)
+- **Текущая фаза:** `Фаза 1: Структурная аблация и надежность`
+- **Прогресс по GPU-запускам:** `5 / 23` (E3′ завершен, E2′ выполняется)
+- **Блокирующие проверки (Sanity Checks):** `6 / 6 ВСЕ ПРОЙДЕНЫ`
 - **Текущая рабочая ветка:** `main`
-- **Последнее обновление:** 2026-09-13
+- **Последнее обновление:** 2026-09-14 00:50
 
 ---
 
@@ -77,22 +77,22 @@
 > **Цель:** Изолированное доказательство превосходства точки интеграции post-SPPF и статистическая значимость прироста на 5 сидах.
 
 ### E3′: Исследование глубины встраивания (5 запусков, seed=0, 100 эпох)
-| ID | Run Name | Конфигурация | Точка интеграции | mAP@50 (last) | mAP@50 (max) | mAP@50-95 | Статус |
+| ID | Run Name | Конфигурация | Точка интеграции | mAP@50 | mAP@50-95 | $\gamma_{final}$ | Статус |
 |---|---|---|---|---|---|---|---|
-| E3′-1 | `e3p__pos-p3__s0` | `yolov8s-rfd-p3.yaml` | После P3 (C2f-4) | | | | ⬜ Pending |
-| E3′-2 | `e3p__pos-p4__s0` | `yolov8s-rfd-p4.yaml` | После P4 (C2f-6) | | | | ⬜ Pending |
-| E3′-3 | `e3p__pos-presppf__s0` | `yolov8s-rfd-presppf.yaml` | Перед SPPF | | | | ⬜ Pending |
-| E3′-4 | `e3p__pos-postsppf__s0` | `yolov8s-rfd-postsppf.yaml` | После SPPF (base) | | | | ⬜ Pending |
-| E3′-5 | `e3p__capctrl__s0` | `yolov8s-capctrl.yaml` | Контроль емкости | | | | ⬜ Pending |
+| E3′-1 | `e3p__pos-p3__s0` | `yolov8s-rfd-p3.yaml` | После P3 (C2f-4) | 0.6965 | 0.4345 | -0.000546 | ✅ Completed |
+| E3′-2 | `e3p__pos-p4__s0` | `yolov8s-rfd-p4.yaml` | После P4 (C2f-6) | 0.6920 | 0.4332 | +0.019775 | ✅ Completed |
+| E3′-3 | `e3p__pos-presppf__s0` | `yolov8s-rfd-presppf.yaml` | Перед SPPF | 0.6933 | 0.4326 | +0.026108 | ✅ Completed |
+| E3′-4 | `e3p__pos-postsppf__s0` | `yolov8s-rfd-postsppf.yaml` | После SPPF (base) | 0.6937 | 0.4348 | +0.003155 | ✅ Completed |
+| E3′-5 | `e3p__capctrl__s0` | `yolov8s-capctrl.yaml` | Контроль емкости | 0.6924 | 0.4370 | +0.008713 | ✅ Completed |
 
-### E2′: Мультисид-валидация для С1 (5 запусков)
+### E2′: Мультисид-валидация для С1 (5 запусков, 100 эпох)
 | ID | Run Name | Модель | Seed | mAP@50 | mAP@50-95 | Статус |
 |---|---|---|---|---|---|---|
-| E2′-B1 | `e2p__baseline__s1` | `yolov8s.yaml` | 1 | | | ⬜ Pending |
-| E2′-B2 | `e2p__baseline__s2` | `yolov8s.yaml` | 2 | | | ⬜ Pending |
-| E2′-R1 | `e2p__postsppf__s1` | `yolov8s-rfd-postsppf.yaml` | 1 | | | ⬜ Pending |
-| E2′-R2 | `e2p__postsppf__s2` | `yolov8s-rfd-postsppf.yaml` | 2 | | | ⬜ Pending |
-| E2′-R3 | `e2p__postsppf__s3` | `yolov8s-rfd-postsppf.yaml` | 3 | | | ⬜ Pending |
+| E2′-B1 | `e2p__baseline__s1` | `yolov8s.yaml` | 1 | | | 🔄 In Progress |
+| E2′-B2 | `e2p__baseline__s2` | `yolov8s.yaml` | 2 | | | 🔄 In Progress |
+| E2′-R1 | `e2p__postsppf__s1` | `yolov8s-rfd-postsppf.yaml` | 1 | | | 🔄 In Progress |
+| E2′-R2 | `e2p__postsppf__s2` | `yolov8s-rfd-postsppf.yaml` | 2 | | | 🔄 In Progress |
+| E2′-R3 | `e2p__postsppf__s3` | `yolov8s-rfd-postsppf.yaml` | 3 | | | 🔄 In Progress |
 
 **Контрольная точка С1:** Двусторонний t-тест / U-тест Манна-Уитни ($p < 0.05$).
 
