@@ -149,7 +149,12 @@ dmypy.json
 
 # datasets and projects (ignore /datasets dir at root only to allow for docs/en/datasets dir)
 /datasets
-runs/
+runs/*
+!runs/*/
+!runs/**/args.yaml
+!runs/**/results.csv
+!runs/**/rfd_log.csv
+!artifacts/**
 wandb/
 .DS_Store
 
@@ -200,9 +205,7 @@ calibration_*.npy
 *.ico
 *.raw
 
-# Training logs
-args.yaml
-results.csv
+# Training logs (managed in runs section above)
 
 # CI test asset cache
 .ultralytics_cache/
