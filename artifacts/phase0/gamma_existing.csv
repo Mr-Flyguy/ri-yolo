@@ -1,0 +1,5 @@
+ckpt,key,gamma
+runs\detect\runs\ablation_study\2_yolov8s_rfd\weights\best.pt,model.10.gamma,0.01219940185546875
+runs\detect\runs\ablation_study\3_yolov8s_rfd_rsl\weights\best.pt,model.10.gamma,-0.00414276123046875
+runs\detect\runs\ablation_study\4_yolov8s_rfd_nwd\weights\best.pt,model.10.gamma,0.01788330078125
+runs\detect\runs\ablation_study\5_full_ri_yolo\weights\best.pt,model.10.gamma,0.002063751220703125
