@@ -124,7 +124,7 @@
 ### E4′: Влияние мозаичной аугментации (2 запуска, seed=0, 100 эпох)
 | ID | Run Name | Модель | `close_mosaic` | mAP@50 | mAP@50-95 | Статус |
 |---|---|---|---|---|---|---|
-| E4′-1 | `e4p__mosaic-close30__s0` | `yolov8s-rfd-postsppf.yaml` | 30 | | | ⬜ Pending |
+| E4′-1 | `e4p__mosaic-close0__s0` | `yolov8s-rfd-postsppf.yaml` | 0 | | | ⬜ Pending |
 | E4′-2 | `e4p__mosaic-close50__s0` | `yolov8s-rfd-postsppf.yaml` | 50 | | | ⬜ Pending |
 
 ### E5′: Длительность обучения и динамика сходимости (4 запуска, seed=0)
