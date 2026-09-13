@@ -130,6 +130,12 @@ def parse_args():
     parser.add_argument("--workers", type=int, default=8, help="DataLoader workers (default: 8)")
     parser.add_argument("--project", type=str, default="runs", help="Output project directory")
     parser.add_argument("--weights", type=str, default="weights/yolov8s.pt", help="Pretrained weights checkpoint")
+    parser.add_argument(
+        "--lambda_tv",
+        type=float,
+        default=None,
+        help="Optimal lambda_tv determined from E6 sweep (used for E7 runs)",
+    )
     return parser.parse_args()
 
 
@@ -179,7 +185,30 @@ def run_experiment(run_name: str, exp_info: dict, args):
 
     # Apply hyperparameter overrides (use_rsl, lambda_tv, use_nwd, etc.)
     if "hyp_overrides" in exp_info:
-        train_kwargs.update(exp_info["hyp_overrides"])
+        overrides = dict(exp_info["hyp_overrides"])
+        # For E7 runs, dynamically resolve optimal lambda_tv from E6'
+        if exp_info["group"] == "E7":
+            chosen_lambda = None
+            if args.lambda_tv is not None:
+                chosen_lambda = args.lambda_tv
+                print(f"[INFO] Using explicitly provided lambda_tv={chosen_lambda} for {run_name}")
+            else:
+                summary_p = Path("artifacts/phase2/summary.csv")
+                if summary_p.exists():
+                    try:
+                        with open(summary_p, "r") as sf:
+                            e6_rows = [r for r in csv.DictReader(sf) if r.get("group") == "E6" and r.get("lambda_tv") not in ("NA", "")]
+                            if e6_rows:
+                                best_e6 = max(e6_rows, key=lambda x: float(x.get("mAP50", 0.0)))
+                                chosen_lambda = float(best_e6["lambda_tv"])
+                                print(f"[INFO] Auto-detected best lambda_tv={chosen_lambda} from E6' ({best_e6['run']}, mAP50={best_e6['mAP50']})")
+                    except Exception as e:
+                        print(f"[WARN] Error reading E6' summary: {e}")
+            if chosen_lambda is not None:
+                overrides["lambda_tv"] = chosen_lambda
+            else:
+                print(f"[WARN] No E6' results found and --lambda_tv not set. Falling back to default lambda_tv=0.001 for {run_name}")
+        train_kwargs.update(overrides)
 
     # Launch training
     results = model.train(**train_kwargs)
@@ -258,7 +287,14 @@ def main():
     target = args.run.lower().strip()
 
     if target in ("all", "phase2"):
-        selected_runs = list(PHASE2_EXPERIMENTS.keys())
+        print("[ERROR] Simultaneous execution of all Phase 2 experiments (--run all) is prohibited!")
+        print("According to RI_YOLO_Technical_Roadmap.md (Section 2), E7' (NWD variants) strictly")
+        print("depends on the optimal lambda_tv determined from E6' results.")
+        print("\n[ACTION] Please execute E6' first:")
+        print("  python scripts/train_phase2.py --run e6 --data exdark.yaml --device 0 --epochs 100")
+        print("\nAfter analyzing E6' results, proceed to E7' with the winning lambda_tv:")
+        print("  python scripts/train_phase2.py --run e7 --lambda_tv <winner> --data exdark.yaml --device 0 --epochs 100")
+        sys.exit(1)
     elif target in ("e6", "e6p"):
         selected_runs = [k for k, v in PHASE2_EXPERIMENTS.items() if v["group"] == "E6"]
     elif target in ("e7", "e7p"):
