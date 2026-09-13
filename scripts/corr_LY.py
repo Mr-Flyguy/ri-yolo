@@ -7,23 +7,99 @@ Evaluates whether the learned illumination map L physically correlates with imag
 
 import argparse
 import csv
+import glob
 import os
+from pathlib import Path
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.stats import pearsonr, spearmanr
 import torch
+import yaml
 from ultralytics import YOLO
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Compute correlation between illumination map L and luminance Y.")
     parser.add_argument("--ckpt", required=True, help="Path to model checkpoint (.pt)")
-    parser.add_argument("--images", required=True, help="Path to text file with image paths (e.g. splits/val.txt) or image directory")
+    parser.add_argument("--images", required=True, help="Path to text file, dataset YAML (exdark.yaml), or image directory")
     parser.add_argument("--n", type=int, default=300, help="Number of images to process")
     parser.add_argument("--out-csv", default="artifacts/phase0/rho_LY.csv", help="Output CSV path")
     parser.add_argument("--out-fig", default="artifacts/phase0/L_maps.png", help="Output visualization PNG path")
     return parser.parse_args()
+
+
+def resolve_checkpoint(ckpt_str):
+    """Resolve checkpoint path, auto-discovering in runs/ if path moved."""
+    ckpt_path = Path(ckpt_str)
+    if ckpt_path.exists():
+        return str(ckpt_path)
+
+    # Search recursively under runs/
+    print(f"[INFO] Path '{ckpt_str}' not directly found, scanning runs/ for matches...")
+    patterns = [
+        f"**/{ckpt_path.name}",
+        f"**/{ckpt_path.stem}*/**/*.pt",
+    ]
+    run_hint = ckpt_path.parent.parent.name if ckpt_path.parent.name == "weights" else ckpt_path.stem
+    all_matches = []
+    for pat in patterns:
+        all_matches.extend(list(Path("runs").glob(pat)))
+
+    # Filter with run_hint
+    filtered = [m for m in all_matches if run_hint in str(m) and m.is_file()]
+    if filtered:
+        print(f"[INFO] Resolved checkpoint '{ckpt_str}' -> '{filtered[0]}'")
+        return str(filtered[0])
+    if all_matches:
+        valid_files = [m for m in all_matches if m.is_file()]
+        if valid_files:
+            print(f"[INFO] Using nearest matching checkpoint: '{valid_files[0]}'")
+            return str(valid_files[0])
+
+    raise FileNotFoundError(f"Checkpoint not found: {ckpt_str}")
+
+
+def resolve_images(img_source, n_max=300):
+    """Parse images from a dataset YAML, text split, or image directory."""
+    paths = []
+    if os.path.isfile(img_source):
+        if img_source.endswith((".yaml", ".yml")):
+            with open(img_source) as f:
+                cfg = yaml.safe_load(f)
+            root = cfg.get("path", "")
+            val_entry = cfg.get("val", "")
+            if root and not os.path.isabs(val_entry):
+                val_dir = os.path.join(root, val_entry)
+            else:
+                val_dir = val_entry
+
+            if os.path.isdir(val_dir):
+                for ext in ("*.jpg", "*.jpeg", "*.png", "*.bmp"):
+                    paths.extend(glob.glob(os.path.join(val_dir, ext)))
+                    paths.extend(glob.glob(os.path.join(val_dir, "**", ext), recursive=True))
+            elif os.path.isfile(val_dir):
+                with open(val_dir) as f:
+                    paths = [line.strip() for line in f if line.strip() and os.path.exists(line.strip())]
+            else:
+                # Fallback to search under datasets/
+                paths = glob.glob(os.path.join("datasets", "**", "images", "val", "*.jpg"), recursive=True)
+                if not paths:
+                    paths = glob.glob(os.path.join("datasets", "**", "*.jpg"), recursive=True)
+        else:
+            with open(img_source) as f:
+                paths = [line.strip() for line in f if line.strip() and os.path.exists(line.strip())]
+    elif os.path.isdir(img_source):
+        for ext in ("*.jpg", "*.jpeg", "*.png", "*.bmp"):
+            paths.extend(glob.glob(os.path.join(img_source, ext)))
+            paths.extend(glob.glob(os.path.join(img_source, "**", ext), recursive=True))
+    else:
+        raise FileNotFoundError(f"Cannot find image source: {img_source}")
+
+    paths = sorted(list(set(paths)))[:n_max]
+    if not paths:
+        raise RuntimeError(f"No valid images found for source: {img_source}")
+    return paths
 
 
 def main():
@@ -31,9 +107,10 @@ def main():
     os.makedirs(os.path.dirname(os.path.abspath(args.out_csv)), exist_ok=True)
     os.makedirs(os.path.dirname(os.path.abspath(args.out_fig)), exist_ok=True)
 
+    ckpt_resolved = resolve_checkpoint(args.ckpt)
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    print(f"[INFO] Loading model {args.ckpt} on {device}...")
-    model = YOLO(args.ckpt).model.eval().to(device)
+    print(f"[INFO] Loading model {ckpt_resolved} on {device}...")
+    model = YOLO(ckpt_resolved).model.eval().to(device)
 
     # Locate RFDBlock
     rfd_modules = [m for m in model.modules() if m.__class__.__name__ == "RFDBlock"]
@@ -47,20 +124,7 @@ def main():
         lambda m, i, o: buf.__setitem__("L", getattr(m, "_ill_stat", getattr(m, "_illumination_map", None)))
     )
 
-    # Parse image paths
-    if os.path.isfile(args.images):
-        with open(args.images) as f:
-            paths = [line.strip() for line in f if line.strip() and os.path.exists(line.strip())][: args.n]
-    elif os.path.isdir(args.images):
-        import glob
-        exts = ("*.jpg", "*.jpeg", "*.png", "*.bmp")
-        paths = []
-        for ext in exts:
-            paths.extend(glob.glob(os.path.join(args.images, ext)))
-        paths = paths[: args.n]
-    else:
-        raise FileNotFoundError(f"Cannot find image source: {args.images}")
-
+    paths = resolve_images(args.images, n_max=args.n)
     print(f"[INFO] Processing {len(paths)} images...")
     L_all, Y_all, examples = [], [], []
 
