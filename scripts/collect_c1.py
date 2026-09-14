@@ -66,7 +66,7 @@ def main():
 
         # Find in summary data
         for rname, data in summary_data.items():
-            if cfg in rname:
+            if cfg in rname or (cfg == "pos-postsppf" and "postsppf" in rname):
                 runs_for_cfg.append(data)
 
         # Fallback to scanning runs/ directly
