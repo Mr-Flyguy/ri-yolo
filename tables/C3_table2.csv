@@ -1,0 +1,4 @@
+model,params_M,gflops,batch,half,lat_med_ms,lat_p95_ms,fps,overhead_ms,overhead_pct
+yolov8s.yaml,11.167,28.81,1,0,4.92,6.93,203.2,0.0,0.0
+yolov8s-rfd-postsppf.yaml,13.791,30.91,1,0,5.15,6.12,194.4,0.23,4.7
+yolov8s-capctrl.yaml,13.79,30.91,1,0,5.15,6.73,194.3,0.23,4.7
