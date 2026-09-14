@@ -1,0 +1,5 @@
+run,group,model,seed,epochs,lambda_tv,use_nwd,nwd_mode,nwd_c,size_tau,mAP50,mAP50_95,gamma_final,L_std_final
+e6p__lam-1e-4__s0,E6,ultralytics/cfg/models/v8/yolov8s-rfd-postsppf.yaml,0,100,0.0001,False,NA,NA,NA,0.6937,0.4349,+0.002043,NA
+e6p__lam-1e-3__s0,E6,ultralytics/cfg/models/v8/yolov8s-rfd-postsppf.yaml,0,100,0.001,False,NA,NA,NA,0.6938,0.4303,+0.000282,NA
+e6p__lam-1e-2__s0,E6,ultralytics/cfg/models/v8/yolov8s-rfd-postsppf.yaml,0,100,0.01,False,NA,NA,NA,0.6960,0.4355,+0.002626,NA
+e6p__lam-1e-1__s0,E6,ultralytics/cfg/models/v8/yolov8s-rfd-postsppf.yaml,0,100,0.1,False,NA,NA,NA,0.6916,0.4329,+0.014175,NA
