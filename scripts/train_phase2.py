@@ -248,18 +248,18 @@ def run_experiment(run_name: str, exp_info: dict, args):
         except Exception as e:
             print(f"[WARN] Could not parse rfd_log.csv: {e}")
 
-    overrides = exp_info.get("hyp_overrides", {})
     row = {
         "run": run_name,
         "group": exp_info["group"],
         "model": exp_info["cfg"],
         "seed": exp_info["seed"],
         "epochs": args.epochs,
-        "lambda_tv": overrides.get("lambda_tv", "NA"),
-        "use_nwd": overrides.get("use_nwd", False),
-        "nwd_mode": overrides.get("nwd_mode", "NA"),
-        "nwd_c": overrides.get("nwd_c", "NA"),
-        "size_tau": overrides.get("size_tau", "NA"),
+        "lambda_tv": train_kwargs.get("lambda_tv", "NA"),
+        "use_rsl": train_kwargs.get("use_rsl", False),
+        "use_nwd": train_kwargs.get("use_nwd", False),
+        "nwd_mode": train_kwargs.get("nwd_mode", "NA"),
+        "nwd_c": train_kwargs.get("nwd_c", "NA"),
+        "size_tau": train_kwargs.get("size_tau", "NA"),
         "mAP50": f"{map50:.4f}",
         "mAP50_95": f"{map50_95:.4f}",
         "gamma_final": gamma_val,
