@@ -144,6 +144,9 @@ def train_single_run(run_name, exp_info, args):
     print("=" * 80 + "\n")
 
     run_dir = Path(args.project) / run_name
+    if not run_dir.exists() and (Path("runs/detect/runs") / run_name).exists():
+        run_dir = Path("runs/detect/runs") / run_name
+
     last_ckpt = run_dir / "weights" / "last.pt"
 
     # Check if already completed
@@ -152,7 +155,7 @@ def train_single_run(run_name, exp_info, args):
         with open(results_csv) as f:
             lines = [line.strip() for line in f if line.strip()]
         if len(lines) >= args.epochs + 1:  # header + epochs
-            print(f"[SKIP] Run {run_name} already completed ({len(lines)-1} epochs found).")
+            print(f"[SKIP] Run {run_name} already completed ({len(lines)-1} epochs found in {run_dir}).")
             return
 
     # Check for resume

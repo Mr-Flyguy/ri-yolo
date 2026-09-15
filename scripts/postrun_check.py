@@ -20,6 +20,19 @@ def main():
     r = args.run
     results_csv = os.path.join(r, "results.csv")
     if not os.path.exists(results_csv):
+        # Try alternate run directories (e.g., runs/detect/runs/<name> vs runs/<name>)
+        bname = os.path.basename(os.path.normpath(r))
+        alts = [
+            os.path.join("runs", "detect", "runs", bname),
+            os.path.join("runs", bname),
+        ]
+        for alt in alts:
+            if os.path.exists(os.path.join(alt, "results.csv")):
+                r = alt
+                results_csv = os.path.join(r, "results.csv")
+                break
+
+    if not os.path.exists(results_csv):
         print(f"[ERROR] results.csv not found in {r}", file=sys.stderr)
         sys.exit(1)
 

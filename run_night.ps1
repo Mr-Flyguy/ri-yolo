@@ -93,8 +93,17 @@ foreach ($run in $RunsQueue) {
         if ($exitCode -eq 0) {
             Write-Host "`n[POST-CHECK] Обучение $runName завершено с кодом 0. Запуск проверки..." -ForegroundColor Cyan
             
+            # Определение фактического каталога результатов (Фаза 1 сохраняется в runs/detect/runs/)
+            $targetRunDir = "runs/detect/runs/$runName"
+            if (-not (Test-Path $targetRunDir)) {
+                if (Test-Path "runs/$runName") {
+                    $targetRunDir = "runs/$runName"
+                }
+            }
+            Write-Host "[POST-CHECK] Фактический каталог прогона: $targetRunDir" -ForegroundColor Gray
+
             # Запуск скрипта пост-проверки результатов
-            $checkCmd = "python scripts/postrun_check.py --run runs/$runName"
+            $checkCmd = "python scripts/postrun_check.py --run $targetRunDir"
             Invoke-Expression "$checkCmd 2>&1" | Tee-Object -FilePath $logFile -Append
             
             if ($LASTEXITCODE -eq 0) {
