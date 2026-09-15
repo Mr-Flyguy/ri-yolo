@@ -19,7 +19,7 @@ TRF = {
     "pos-p4": (239, 37.3, 0.657),
     "pos-presppf": (399, 62.3, 2.624),
     "pos-postsppf": (783, 122.3, 2.624),
-    "capctrl": (399, 62.3, 2.623),
+    "capctrl": (783, 122.3, 2.623),
 }
 ORDER = ["baseline", "pos-p3", "pos-p4", "pos-presppf", "pos-postsppf", "capctrl"]
 
