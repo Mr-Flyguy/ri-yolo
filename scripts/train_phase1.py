@@ -54,8 +54,26 @@ PHASE1_EXPERIMENTS = {
         "seed": 0,
         "desc": "Capacity control module (RFDBlockNoGate, constant 0.5 gate)",
     },
+    "e3p__capctrl__s1": {
+        "group": "E3",
+        "cfg": "ultralytics/cfg/models/v8/yolov8s-capctrl.yaml",
+        "seed": 1,
+        "desc": "Capacity control module (seed 1)",
+    },
+    "e3p__capctrl__s2": {
+        "group": "E3",
+        "cfg": "ultralytics/cfg/models/v8/yolov8s-capctrl.yaml",
+        "seed": 2,
+        "desc": "Capacity control module (seed 2)",
+    },
 
     # --- E2' Multi-Seed Validation ---
+    "e2p__baseline__s0": {
+        "group": "E2",
+        "cfg": "yolov8s.yaml",
+        "seed": 0,
+        "desc": "Standard YOLOv8s baseline (seed 0)",
+    },
     "e2p__baseline__s1": {
         "group": "E2",
         "cfg": "yolov8s.yaml",
@@ -67,6 +85,12 @@ PHASE1_EXPERIMENTS = {
         "cfg": "yolov8s.yaml",
         "seed": 2,
         "desc": "Standard YOLOv8s baseline (seed 2)",
+    },
+    "e2p__baseline__s3": {
+        "group": "E2",
+        "cfg": "yolov8s.yaml",
+        "seed": 3,
+        "desc": "Standard YOLOv8s baseline (seed 3)",
     },
     "e2p__postsppf__s1": {
         "group": "E2",
