@@ -152,7 +152,7 @@ def run_experiment(run_name: str, exp_info: dict, args):
 
     # Initialize model
     model = YOLO(exp_info["cfg"])
-    add_rfd_logging(model)
+    model.add_callback("on_fit_epoch_end", add_rfd_logging)
 
     # Load pretrained weights
     if args.weights and Path(args.weights).exists():
