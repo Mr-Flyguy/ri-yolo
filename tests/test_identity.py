@@ -26,9 +26,8 @@ except ImportError:
         return fn
 
 
-@_parametrize
-def test_identity_at_init(cfg, weights="yolov8s.pt", atol=1e-4):
-    """Test that model output with RFD module matches baseline output at initialization."""
+def check_identity_at_init(cfg, weights="yolov8s.pt", atol=1e-4):
+    """Compute and verify identity output difference for RFD module at initialization."""
     device = "cuda" if torch.cuda.is_available() else "cpu"
     base = YOLO(weights).model.to(device).eval()
     mod = YOLO(cfg).load(weights).model.to(device).eval()
@@ -46,6 +45,12 @@ def test_identity_at_init(cfg, weights="yolov8s.pt", atol=1e-4):
     return max_diff
 
 
+@_parametrize
+def test_identity_at_init(cfg, weights="yolov8s.pt", atol=1e-4):
+    """Test that model output with RFD module matches baseline output at initialization."""
+    check_identity_at_init(cfg, weights=weights, atol=atol)
+
+
 def main():
     parser = argparse.ArgumentParser(description="Test identity mapping of RFD models at initialization.")
     parser.add_argument("--weights", default="yolov8s.pt", help="Path to baseline pretrained weights")
@@ -57,7 +62,7 @@ def main():
     all_passed = True
     for cfg in args.cfgs:
         try:
-            max_d = test_identity_at_init(cfg, weights=args.weights, atol=args.atol)
+            max_d = check_identity_at_init(cfg, weights=args.weights, atol=args.atol)
             print(f"  [PASS] {cfg:30s} max|diff| = {max_d:.2e}")
         except Exception as e:
             print(f"  [FAIL] {cfg:30s} ERROR: {e}")
