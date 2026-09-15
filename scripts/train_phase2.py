@@ -156,6 +156,10 @@ def run_experiment(run_name: str, exp_info: dict, args):
 
     # Load pretrained weights
     if args.weights and Path(args.weights).exists():
+        import hashlib
+
+        h = hashlib.md5(open(args.weights, "rb").read()).hexdigest()
+        print(f"[INIT] weights={args.weights} md5={h}")
         print(f"[INFO] Transferring weights from {args.weights}...")
         model.load(args.weights)
     elif args.weights:

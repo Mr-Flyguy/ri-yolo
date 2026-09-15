@@ -103,7 +103,7 @@ def parse_args():
     parser.add_argument("--imgsz", type=int, default=640, help="Image resolution")
     parser.add_argument("--device", default="", help="Device: '0', '0,1', 'cpu'")
     parser.add_argument("--workers", type=int, default=8, help="Dataloader workers")
-    parser.add_argument("--weights", type=str, default="yolov8s.pt", help="Pretrained weights file")
+    parser.add_argument("--weights", type=str, default="weights/yolov8s.pt", help="Pretrained weights file")
     parser.add_argument("--project", type=str, default="runs", help="Save directory root")
     parser.add_argument("--resume", action="store_true", help="Resume training from last.pt if exists")
     return parser.parse_args()
@@ -146,6 +146,10 @@ def train_single_run(run_name, exp_info, args):
 
     # Load pretrained backbone/head weights
     if args.weights and Path(args.weights).exists():
+        import hashlib
+
+        h = hashlib.md5(open(args.weights, "rb").read()).hexdigest()
+        print(f"[INIT] weights={args.weights} md5={h}")
         print(f"[INFO] Transferring weights from {args.weights}...")
         model.load(args.weights)
     elif args.weights:
