@@ -154,9 +154,12 @@ class BboxLoss(nn.Module):
                 tgt = target_bboxes[fg_mask]
                 size = torch.sqrt((tgt[:, 2] - tgt[:, 0]).clamp(min=1e-4) * (tgt[:, 3] - tgt[:, 1]).clamp(min=1e-4))
                 size_tau = getattr(self, "size_tau", 8.0)
-                alpha = self.nwd_alpha * torch.exp(-size / size_tau)
+                alpha = (self.nwd_alpha * torch.exp(-size / size_tau)).unsqueeze(-1)
             else:
                 alpha = self.nwd_alpha
+            assert (not torch.is_tensor(alpha)) or alpha.shape == iou.shape, (
+                f"alpha {tuple(alpha.shape)} != iou {tuple(iou.shape)}"
+            )
 
             loss_box = alpha * (1.0 - nwd) + (1.0 - alpha) * (1.0 - iou)
             loss_iou = (loss_box * weight).sum() / target_scores_sum
