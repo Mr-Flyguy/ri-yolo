@@ -71,7 +71,12 @@ def main():
 
         # Fallback to scanning runs/ directly
         if not runs_for_cfg:
-            for p in Path("runs").glob(f"**/*{cfg}*/results.csv"):
+            seen_runs = set()
+            for p in sorted(Path("runs").glob(f"**/*{cfg}*/results.csv")):
+                run_tag = p.parent.name
+                if run_tag in seen_runs:
+                    continue
+                seen_runs.add(run_tag)
                 m50, m95 = extract_metrics_from_csv(p)
                 runs_for_cfg.append({"mAP50": m50, "mAP50_95": m95, "gamma": None})
 
