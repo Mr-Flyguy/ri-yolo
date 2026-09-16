@@ -1,0 +1,3 @@
+run,group,model,seed,epochs,close_mosaic,clean_epochs_pct,mAP50,mAP50_95,gamma_final,L_std_final
+e4p__mosaic-close0__s0,E4,ultralytics/cfg/models/v8/yolov8s-rfd-postsppf.yaml,0,100,0,0.0,0.6903,0.4350,+0.028336,NA
+e4p__mosaic-close50__s0,E4,ultralytics/cfg/models/v8/yolov8s-rfd-postsppf.yaml,0,100,50,50.0,0.6929,0.4323,+0.002523,NA
