@@ -8,7 +8,6 @@ Executes controlled runs for Article C2 (VAK / RSCI):
 
 import argparse
 import csv
-import os
 import sys
 from pathlib import Path
 
@@ -16,8 +15,8 @@ ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from scripts.rfd_callbacks import add_rfd_logging
-from ultralytics import YOLO
+from scripts.rfd_callbacks import add_rfd_logging  # noqa: E402
+from ultralytics import YOLO  # noqa: E402
 
 # Complete Phase 2 experiment catalog (Runs 11-17 of 23)
 PHASE2_EXPERIMENTS = {
@@ -111,6 +110,83 @@ PHASE2_EXPERIMENTS = {
             "size_tau": 5.12,
         },
     },
+
+    # --- Block 4 Updated Runs (Decisions C2 / Claude Opus 16.09.2026) ---
+    "e7p__nwd-calib-norsl__s0": {
+        "group": "E7",
+        "cfg": "ultralytics/cfg/models/v8/yolov8s-rfd-postsppf.yaml",
+        "seed": 0,
+        "desc": "Calibrated NWD without RSL (isolated metric on live gate)",
+        "hyp_overrides": {
+            "use_rsl": False,
+            "lambda_tv": 0.0,
+            "use_nwd": True,
+            "nwd_alpha": 0.2,
+            "nwd_mode": "abs",
+            "nwd_c": 10.24,
+        },
+    },
+    "e6p__lam-1e-4__s1": {
+        "group": "E6",
+        "cfg": "ultralytics/cfg/models/v8/yolov8s-rfd-postsppf.yaml",
+        "seed": 1,
+        "desc": "Partially live gate multi-seed seed 1 (lambda=1e-4)",
+        "hyp_overrides": {
+            "use_rsl": True,
+            "lambda_tv": 0.0001,
+            "use_nwd": False,
+        },
+    },
+    "e6p__lam-1e-4__s2": {
+        "group": "E6",
+        "cfg": "ultralytics/cfg/models/v8/yolov8s-rfd-postsppf.yaml",
+        "seed": 2,
+        "desc": "Partially live gate multi-seed seed 2 (lambda=1e-4)",
+        "hyp_overrides": {
+            "use_rsl": True,
+            "lambda_tv": 0.0001,
+            "use_nwd": False,
+        },
+    },
+    "e6p__lam-1e-5__s0": {
+        "group": "E6",
+        "cfg": "ultralytics/cfg/models/v8/yolov8s-rfd-postsppf.yaml",
+        "seed": 0,
+        "desc": "Boundary collapse check (lambda=1e-5, seed 0)",
+        "hyp_overrides": {
+            "use_rsl": True,
+            "lambda_tv": 0.00001,
+            "use_nwd": False,
+        },
+    },
+    "e7p__nwd-calib__s1": {
+        "group": "E7",
+        "cfg": "ultralytics/cfg/models/v8/yolov8s-rfd-postsppf.yaml",
+        "seed": 1,
+        "desc": "Calibrated NWD seed 1",
+        "hyp_overrides": {
+            "use_rsl": True,
+            "lambda_tv": 0.001,
+            "use_nwd": True,
+            "nwd_alpha": 0.2,
+            "nwd_mode": "abs",
+            "nwd_c": 10.24,
+        },
+    },
+    "e7p__nwd-calib__s2": {
+        "group": "E7",
+        "cfg": "ultralytics/cfg/models/v8/yolov8s-rfd-postsppf.yaml",
+        "seed": 2,
+        "desc": "Calibrated NWD seed 2",
+        "hyp_overrides": {
+            "use_rsl": True,
+            "lambda_tv": 0.001,
+            "use_nwd": True,
+            "nwd_alpha": 0.2,
+            "nwd_mode": "abs",
+            "nwd_c": 10.24,
+        },
+    },
 }
 
 
@@ -190,8 +266,8 @@ def run_experiment(run_name: str, exp_info: dict, args):
     # Apply hyperparameter overrides (use_rsl, lambda_tv, use_nwd, etc.)
     if "hyp_overrides" in exp_info:
         overrides = dict(exp_info["hyp_overrides"])
-        # For E7 runs, dynamically resolve optimal lambda_tv from E6'
-        if exp_info["group"] == "E7":
+        # For E7 runs, dynamically resolve optimal lambda_tv from E6' (only if use_rsl is True)
+        if exp_info["group"] == "E7" and overrides.get("use_rsl", True):
             chosen_lambda = None
             if args.lambda_tv is not None:
                 chosen_lambda = args.lambda_tv
@@ -307,7 +383,7 @@ def main():
         selected_runs = [target]
     else:
         print(f"[ERROR] Unknown run or group: '{args.run}'.")
-        print(f"Available runs/groups: 'all', 'e6', 'e7', or specific:")
+        print("Available runs/groups: 'all', 'e6', 'e7', or specific:")
         for k in sorted(PHASE2_EXPERIMENTS.keys()):
             print(f"  - {k}")
         sys.exit(1)
