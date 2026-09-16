@@ -125,6 +125,18 @@ def run_experiment(run_name: str, exp_info: dict, args):
     print(f"Close Mosaic:     {close_mosaic} ({clean_pct}% clean epochs)")
     print(f"{'='*70}\n")
 
+    run_dir = Path(args.project) / run_name
+    if not run_dir.exists() and (Path("runs/detect/runs") / run_name).exists():
+        run_dir = Path("runs/detect/runs") / run_name
+
+    results_csv = run_dir / "results.csv"
+    if results_csv.exists():
+        with open(results_csv) as f:
+            lines = [line.strip() for line in f if line.strip()]
+        if len(lines) >= epochs + 1:
+            print(f"[SKIP] Run {run_name} already completed ({len(lines)-1} epochs found in {run_dir}).")
+            return
+
     # Initialize model
     model = YOLO(exp_info["cfg"])
     model.add_callback("on_fit_epoch_end", add_rfd_logging)
@@ -170,6 +182,11 @@ def run_experiment(run_name: str, exp_info: dict, args):
     # Launch training
     results = model.train(**train_kwargs)
 
+    # Resolve run directory after training
+    run_dir = Path(args.project) / run_name
+    if not run_dir.exists() and (Path("runs/detect/runs") / run_name).exists():
+        run_dir = Path("runs/detect/runs") / run_name
+
     # Post-training summary logging
     summary_path = Path("artifacts/phase3/summary.csv")
     summary_path.parent.mkdir(parents=True, exist_ok=True)
@@ -195,7 +212,7 @@ def run_experiment(run_name: str, exp_info: dict, args):
 
     # Extract final L_std from rfd_log.csv if available
     l_std_final = "NA"
-    rfd_log_file = Path(args.project) / run_name / "rfd_log.csv"
+    rfd_log_file = run_dir / "rfd_log.csv"
     if rfd_log_file.exists():
         try:
             with open(rfd_log_file, "r") as rf:
@@ -233,7 +250,6 @@ def run_experiment(run_name: str, exp_info: dict, args):
         writer.writerows(existing_rows)
 
     # Also save individual summary.json inside the run directory for roadmap compliance
-    run_dir = Path(args.project) / run_name
     run_dir.mkdir(parents=True, exist_ok=True)
     summary_json_file = run_dir / "summary.json"
     try:
