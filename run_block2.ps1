@@ -74,7 +74,15 @@ foreach ($r in $diagRuns) {
     Write-Host "`n--- CALC-2.1: $r ---" -ForegroundColor Green
     $ckpt = Get-BestPt $r
     if ($ckpt) {
-        python scripts/corr_LY.py --ckpt $ckpt --images $Data --n 300 --out-csv "artifacts/phase2/diag/rho_$r.csv" --out-fig "artifacts/phase2/diag/Lmaps_$r.png"
+        $outCsv = "artifacts/phase2/diag/rho_$r.csv"
+        $outFig = "artifacts/phase2/diag/Lmaps_$r.png"
+        if ((Test-Path $outCsv) -and (Test-Path $outFig)) {
+            Write-Host "[SKIP] Already computed $outCsv and $outFig" -ForegroundColor Gray
+            continue
+        }
+        Write-Host "[INFO] Running corr_LY.py for $r using $ckpt..." -ForegroundColor Gray
+        Write-Host "[INFO] Loading PyTorch CUDA libraries takes ~5-10s on Windows, please wait..." -ForegroundColor Gray
+        python scripts/corr_LY.py --ckpt $ckpt --images $Data --n 300 --out-csv $outCsv --out-fig $outFig
     } else {
         Write-Host "[ERROR] Checkpoint for $r not found!" -ForegroundColor Red
     }
@@ -84,7 +92,14 @@ foreach ($r in $diagRuns) {
 Write-Host "`n--- CALC-2.1: lam0 anchor (e3p__pos-postsppf__s0) ---" -ForegroundColor Green
 $lam0Ckpt = Get-BestPt "e3p__pos-postsppf__s0"
 if ($lam0Ckpt) {
-    python scripts/corr_LY.py --ckpt $lam0Ckpt --images $Data --n 300 --out-csv "artifacts/phase2/diag/rho_lam0.csv" --out-fig "artifacts/phase2/diag/Lmaps_lam0.png"
+    $outCsv = "artifacts/phase2/diag/rho_lam0.csv"
+    $outFig = "artifacts/phase2/diag/Lmaps_lam0.png"
+    if ((Test-Path $outCsv) -and (Test-Path $outFig)) {
+        Write-Host "[SKIP] Already computed $outCsv and $outFig" -ForegroundColor Gray
+    } else {
+        Write-Host "[INFO] Running corr_LY.py for lam0 using $lam0Ckpt..." -ForegroundColor Gray
+        python scripts/corr_LY.py --ckpt $lam0Ckpt --images $Data --n 300 --out-csv $outCsv --out-fig $outFig
+    }
 } else {
     Write-Host "[ERROR] Checkpoint for e3p__pos-postsppf__s0 not found!" -ForegroundColor Red
 }
