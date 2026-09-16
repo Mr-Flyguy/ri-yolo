@@ -62,10 +62,27 @@ def main():
         map50 = float(d.get("metrics/mAP50(B)", getattr(res.box, "map50", 0.0)))
         map50_95 = float(d.get("metrics/mAP50-95(B)", getattr(res.box, "map", 0.0)))
 
-        # Extract size metrics (from faster-coco-eval/pycocotools if available, else fallback)
-        ap_s = d.get("metrics/mAP_small(B)", None)
-        ap_m = d.get("metrics/mAP_medium(B)", None)
-        ap_l = d.get("metrics/mAP_large(B)", None)
+        # Extract size metrics (from faster-coco-eval if available)
+        ap_s, ap_m, ap_l = None, None, None
+        try:
+            if hasattr(res, "validator") and getattr(res.validator, "gdict", None) and getattr(res.validator, "jdict", None):
+                from faster_coco_eval import COCO, COCOeval_faster
+                anno = COCO(res.validator.gdict)
+                pred = anno.loadRes(res.validator.jdict)
+                val_eval = COCOeval_faster(anno, pred, iouType="bbox")
+                val_eval.evaluate()
+                val_eval.accumulate()
+                val_eval.summarize()
+                ap_s = val_eval.stats_as_dict.get("AP_small")
+                ap_m = val_eval.stats_as_dict.get("AP_medium")
+                ap_l = val_eval.stats_as_dict.get("AP_large")
+        except Exception as e:
+            print(f"[WARN] faster-coco-eval extraction failed: {e}")
+
+        if ap_s is None:
+            ap_s = d.get("metrics/mAP_small(B)", None)
+            ap_m = d.get("metrics/mAP_medium(B)", None)
+            ap_l = d.get("metrics/mAP_large(B)", None)
 
         if ap_s is None and hasattr(res.box, "aps") and len(res.box.aps) >= 3:
             ap_s = res.box.aps[0]
