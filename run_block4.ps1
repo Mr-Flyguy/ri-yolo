@@ -29,13 +29,13 @@ Write-Host "====================================================================
 if (-not (Test-Path "logs")) { New-Item -ItemType Directory -Path "logs" | Out-Null }
 if (-not (Test-Path "runs_fixed")) { New-Item -ItemType Directory -Path "runs_fixed" | Out-Null }
 
-# 2. Base queue (5 mandatory runs)
+# 2. Base queue (5 mandatory runs in revised priority order)
 $RunsQueue = @(
-    @{ Name = "e7p__nwd-calib-norsl__s0"; Project = "runs"; Desc = "CRITICAL: NWD calib without RSL (live gate)" },
-    @{ Name = "e7p__nwd-sizegate__s0"; Project = "runs_fixed"; Desc = "CRITICAL: Fixed size-gate NWD (in runs_fixed)" },
-    @{ Name = "e6p__lam-1e-4__s1"; Project = "runs"; Desc = "HIGH: lambda=1e-4 partially live gate seed 1" },
-    @{ Name = "e6p__lam-1e-4__s2"; Project = "runs"; Desc = "HIGH: lambda=1e-4 partially live gate seed 2" },
-    @{ Name = "e6p__lam-1e-5__s0"; Project = "runs"; Desc = "HIGH: lambda=1e-5 boundary collapse check seed 0" }
+    @{ Name = "e6p__lam-1e-5__s0"; Project = "runs"; Desc = "1. Boundary collapse check (lambda=1e-5, seed 0)" },
+    @{ Name = "e6p__lam-1e-4__s1"; Project = "runs"; Desc = "2. Partially live gate multi-seed (lambda=1e-4, seed 1)" },
+    @{ Name = "e6p__lam-1e-4__s2"; Project = "runs"; Desc = "3. Partially live gate multi-seed (lambda=1e-4, seed 2)" },
+    @{ Name = "e7p__nwd-calib-norsl__s0"; Project = "runs"; Desc = "4. CRITICAL: NWD calib without RSL (live gate)" },
+    @{ Name = "e7p__nwd-sizegate__s0"; Project = "runs_fixed"; Desc = "5. CRITICAL: Fixed size-gate NWD (in runs_fixed)" }
 )
 
 if ($IncludeOptional) {
