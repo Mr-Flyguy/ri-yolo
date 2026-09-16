@@ -9,3 +9,7 @@ e2p__baseline__s2,E2,yolov8s.yaml,2,100,0.6908,0.4304,NA
 e2p__postsppf__s1,E2,ultralytics/cfg/models/v8/yolov8s-rfd-postsppf.yaml,1,100,0.6990,0.4356,-0.001870
 e2p__postsppf__s2,E2,ultralytics/cfg/models/v8/yolov8s-rfd-postsppf.yaml,2,100,0.6942,0.4326,+0.002531
 e2p__postsppf__s3,E2,ultralytics/cfg/models/v8/yolov8s-rfd-postsppf.yaml,3,100,0.6977,0.4362,+0.011772
+e2p__baseline__s0,E2,yolov8s.yaml,0,100,0.6915,0.4343,NA
+e2p__baseline__s3,E2,yolov8s.yaml,3,100,0.6898,0.4313,NA
+e3p__capctrl__s1,E3,ultralytics/cfg/models/v8/yolov8s-capctrl.yaml,1,100,0.6999,0.4372,-0.001747
+e3p__capctrl__s2,E3,ultralytics/cfg/models/v8/yolov8s-capctrl.yaml,2,100,0.6957,0.4369,+0.001177
