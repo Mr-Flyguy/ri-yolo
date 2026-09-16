@@ -105,7 +105,7 @@ def build_table1(p1_rows, p2_rows, out_path):
         },
         {
             "config": "Capacity Control (RFDBlockNoGate, 2.6M params)",
-            "sources": [r for r in p1_rows if r.get("run") == "e3p__capctrl__s0"],
+            "sources": [r for r in p1_rows if "capctrl" in r.get("run", "")],
         },
     ]
 
