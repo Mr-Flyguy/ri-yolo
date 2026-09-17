@@ -94,6 +94,18 @@ def main():
             ap_m = res.box.aps[1]
             ap_l = res.box.aps[2]
 
+        n_s, n_m, n_l = None, None, None
+        try:
+            if hasattr(res, "validator") and getattr(res.validator, "gdict", None):
+                from faster_coco_eval import COCO
+                anno = COCO(res.validator.gdict)
+                anns = anno.anns.values()
+                n_s = len([a for a in anns if a.get("area", 0) < 1024 and not a.get("iscrowd", 0)])
+                n_m = len([a for a in anns if 1024 <= a.get("area", 0) < 9216 and not a.get("iscrowd", 0)])
+                n_l = len([a for a in anns if a.get("area", 0) >= 9216 and not a.get("iscrowd", 0)])
+        except Exception as e:
+            print(f"[WARN] Object count extraction failed: {e}")
+
         row = {
             "ckpt": run_name,
             "mAP50": round(map50, 4),
@@ -101,6 +113,9 @@ def main():
             "AP_small": round(float(ap_s), 4) if ap_s is not None else "NA",
             "AP_medium": round(float(ap_m), 4) if ap_m is not None else "NA",
             "AP_large": round(float(ap_l), 4) if ap_l is not None else "NA",
+            "n_small": n_s if n_s is not None else "NA",
+            "n_medium": n_m if n_m is not None else "NA",
+            "n_large": n_l if n_l is not None else "NA",
         }
         rows.append(row)
         print(f"[RESULT] {row}")
