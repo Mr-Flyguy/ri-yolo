@@ -1,3 +1,7 @@
 run,group,model,seed,epochs,close_mosaic,clean_epochs_pct,mAP50,mAP50_95,gamma_final,L_std_final
 e4p__mosaic-close0__s0,E4,ultralytics/cfg/models/v8/yolov8s-rfd-postsppf.yaml,0,100,0,0.0,0.6903,0.4350,+0.028336,NA
 e4p__mosaic-close50__s0,E4,ultralytics/cfg/models/v8/yolov8s-rfd-postsppf.yaml,0,100,50,50.0,0.6929,0.4323,+0.002523,NA
+e5p__baseline-ep40__s0,E5,yolov8s.yaml,0,40,10,25.0,0.7134,0.4474,NA,NA
+e5p__baseline-ep60__s0,E5,yolov8s.yaml,0,60,10,16.7,0.7088,0.4429,NA,NA
+e5p__postsppf-ep40__s0,E5,ultralytics/cfg/models/v8/yolov8s-rfd-postsppf.yaml,0,40,10,25.0,0.7134,0.4525,-0.000455,0.2599
+e5p__postsppf-ep60__s0,E5,ultralytics/cfg/models/v8/yolov8s-rfd-postsppf.yaml,0,60,10,16.7,0.7086,0.4493,+0.010498,0.3282

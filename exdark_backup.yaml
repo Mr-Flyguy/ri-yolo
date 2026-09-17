@@ -1,7 +1,6 @@
 path: C:/Users/Ksena/project/ri-yolo/datasets/ExDark
 train: images/train
 val: images/val
-test: ExDark/images/test
 
 names:
   0: bicycle
