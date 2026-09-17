@@ -1,6 +1,10 @@
-panel,family,run,epochs,close_mosaic,clean_pct,mAP50,mAP50_95
-epochs,baseline,e2p__baseline__mean100,100,10,10.0,0.6897249999999999,0.4314
-epochs,postsppf,e3p_e2p__postsppf__mean100,100,10,10.0,0.69615,0.43479999999999996
-mosaic,postsppf,e4p__mosaic-close0__s0,100,0,0.0,0.6903,0.435
-mosaic,postsppf,e4p__mosaic-close50__s0,100,50,50.0,0.6929,0.4323
-mosaic,postsppf,e3p__pos-postsppf__s0,100,10,10.0,0.6937,0.4348
+panel,family,run,epochs,close_mosaic,clean_epochs_pct,mAP50,mAP50_95
+epochs,baseline,e5p__baseline-ep40__s0,40,NA,75.0,0.7159,0.4424
+epochs,baseline,e5p__baseline-ep60__s0,60,NA,83.33333333333334,0.6968,0.4313
+epochs,baseline,e2p__baseline__s0,100,NA,90.0,0.6816,0.425
+epochs,postsppf,e5p__postsppf-ep40__s0,40,NA,75.0,0.7102,0.444
+epochs,postsppf,e5p__postsppf-ep60__s0,60,NA,83.33333333333334,0.7035,0.438
+epochs,postsppf,e2p__postsppf__s0,100,NA,90.0,0.6868,0.4243
+mosaic,postsppf,e4p__mosaic-close0__s0,100,0,0.0,0.682,0.422
+mosaic,postsppf,e2p__postsppf__s0,100,10,10.0,0.6868,0.4243
+mosaic,postsppf,e4p__mosaic-close50__s0,100,50,50.0,0.6921,0.4282

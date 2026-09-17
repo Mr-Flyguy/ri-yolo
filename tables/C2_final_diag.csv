@@ -19,3 +19,15 @@ e7p__nwd-scaleinv__s0,runs/detect/runs/e7p__nwd-scaleinv__s0/weights/best.pt,afb
 e7p__nwd-calib-norsl__s0,runs/detect/runs/e7p__nwd-calib-norsl__s0/weights/best.pt,e20dc2b3680a5aed9e25965f226b67dc,0.6616,0.3826,-0.0163,0.0042,0.4257,0.3384,0.017899
 runs_fixed/e7p__nwd-sizegate__s0,runs/detect/runs_fixed/e7p__nwd-sizegate__s0/weights/best.pt,bd1d7c205b8ccc34c458f2c71471bfaf,0.7755,0.3009,-0.1476,-0.1955,0.4812,0.2245,-0.00626
 runs/detect/runs/e7p__nwd-sizegate__s0,runs/detect/runs/e7p__nwd-sizegate__s0/weights/best.pt,cdb350047dcd37b62f4314afa62f601d,0.8896,0.1921,0.0547,0.0924,0.619,0.1104,0.010483
+e3p__pos-p3__s0,runs/detect/runs/e3p__pos-p3__s0/weights/best.pt,002731896f44a04eb892a7b884c5b6bb,0.6757,0.1907,-0.2232,-0.1243,0.0629,0.3243,-0.000546
+e3p__pos-p4__s0,runs/detect/runs/e3p__pos-p4__s0/weights/best.pt,51055040f8e611625dbc82f67e0b6c12,0.552,0.3348,-0.1501,-0.1379,0.177,0.448,0.019775
+e3p__pos-presppf__s0,runs/detect/runs/e3p__pos-presppf__s0/weights/best.pt,b8149c23f6e6752baa12b3648d869408,0.693,0.3438,0.0868,0.1362,0.3824,0.307,0.026108
+e3p__capctrl__s0,runs/detect/runs/e3p__capctrl__s0/weights/best.pt,5921a4e2556d411b3e5b4b27f0ff0a18,NA,NA,NA,NA,NA,NA,0.008713
+e3p__capctrl__s1,runs/detect/runs/e3p__capctrl__s1/weights/best.pt,229d733ef8dd8ef07531712df7458aaf,NA,NA,NA,NA,NA,NA,-0.001747
+e3p__capctrl__s2,runs/detect/runs/e3p__capctrl__s2/weights/best.pt,01deac86eb112a00be89a201536b172f,NA,NA,NA,NA,NA,NA,0.001177
+e5p__baseline-ep40__s0,runs/detect/runs/e5p__baseline-ep40__s0/weights/best.pt,b983b42ed4b2431cb5d08d834ddd3868,NA,NA,NA,NA,NA,NA,NA
+e5p__baseline-ep60__s0,runs/detect/runs/e5p__baseline-ep60__s0/weights/best.pt,e8c2f7f0f08d8c683143946ae0e7f2b2,NA,NA,NA,NA,NA,NA,NA
+e5p__postsppf-ep40__s0,runs/detect/runs/e5p__postsppf-ep40__s0/weights/best.pt,12265a1f25c6f44a5729e10c6ee7ec18,0.5968,0.345,0.0932,0.1033,0.2122,0.4032,-0.000455
+e5p__postsppf-ep60__s0,runs/detect/runs/e5p__postsppf-ep60__s0/weights/best.pt,409a806d12393b5eac2c32869dc43829,0.626,0.3706,-0.0143,0.0241,0.3261,0.374,0.010498
+e4p__mosaic-close0__s0,runs/detect/runs/e4p__mosaic-close0__s0/weights/best.pt,3e82b56bfdd4c191a8c61bbed59fcf16,0.591,0.368,0.0797,0.0657,0.2785,0.409,0.028336
+e4p__mosaic-close50__s0,runs/detect/runs/e4p__mosaic-close50__s0/weights/best.pt,12a8df80659896a248e2b8b052983f91,0.7123,0.3429,-0.0885,-0.0879,0.4131,0.2877,0.002523
