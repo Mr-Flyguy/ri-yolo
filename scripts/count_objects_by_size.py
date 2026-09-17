@@ -24,7 +24,7 @@ def find_label_dirs(data_yaml: str):
         with open(data_yaml, "r", encoding="utf-8") as f:
             cfg = yaml.safe_load(f) or {}
         root = Path(cfg.get("path", "."))
-        for split in ["val", "train"]:
+        for split in ["val", "train", "test"]:
             spec = cfg.get(split)
             if spec:
                 p = root / spec if not Path(spec).is_absolute() else Path(spec)
@@ -36,7 +36,7 @@ def find_label_dirs(data_yaml: str):
                     label_dirs[split] = p
 
     # Fallback search
-    for split in ["val", "train"]:
+    for split in ["val", "train", "test"]:
         if split not in label_dirs:
             for cand in [
                 Path(f"datasets/ExDark/labels/{split}"),
@@ -148,7 +148,11 @@ def main():
 
     if "val" in all_boxes and "train" in all_boxes:
         comb = all_boxes["train"] + all_boxes["val"]
-        analyze_boxes(comb, name="Combined (Train + Val)", imgsz=args.imgsz)
+        if "test" in all_boxes:
+            comb += all_boxes["test"]
+            analyze_boxes(comb, name="Combined (Train + Val + Test)", imgsz=args.imgsz)
+        else:
+            analyze_boxes(comb, name="Combined (Train + Val)", imgsz=args.imgsz)
 
 
 if __name__ == "__main__":
