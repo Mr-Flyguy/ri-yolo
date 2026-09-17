@@ -66,45 +66,47 @@ def main():
         map50 = float(d.get("metrics/mAP50(B)", getattr(res.box, "map50", 0.0)))
         map50_95 = float(d.get("metrics/mAP50-95(B)", getattr(res.box, "map", 0.0)))
 
-        # Extract size metrics (from faster-coco-eval if available)
+        # Extract size metrics and object counts
         ap_s, ap_m, ap_l = None, None, None
-        try:
-            if hasattr(res, "validator") and getattr(res.validator, "gdict", None) and getattr(res.validator, "jdict", None):
-                from faster_coco_eval import COCO, COCOeval_faster
-                anno = COCO(res.validator.gdict)
-                pred = anno.loadRes(res.validator.jdict)
-                val_eval = COCOeval_faster(anno, pred, iouType="bbox")
-                val_eval.evaluate()
-                val_eval.accumulate()
-                val_eval.summarize()
-                if ap_s is None and hasattr(val_eval, "stats") and len(val_eval.stats) >= 6:
-                    ap_s = val_eval.stats[3]
-                    ap_m = val_eval.stats[4]
-                    ap_l = val_eval.stats[5]
-        except Exception as e:
-            print(f"[WARN] faster-coco-eval extraction failed: {e}")
-
-        if ap_s is None:
-            ap_s = d.get("metrics/mAP_small(B)", None)
-            ap_m = d.get("metrics/mAP_medium(B)", None)
-            ap_l = d.get("metrics/mAP_large(B)", None)
-
-        if ap_s is None and hasattr(res.box, "aps") and len(res.box.aps) >= 3:
-            ap_s = res.box.aps[0]
-            ap_m = res.box.aps[1]
-            ap_l = res.box.aps[2]
-
         n_s, n_m, n_l = None, None, None
-        try:
-            if hasattr(res, "validator") and getattr(res.validator, "gdict", None):
-                from faster_coco_eval import COCO
-                anno = COCO(res.validator.gdict)
-                anns = anno.anns.values()
+
+        v = getattr(model, "validator", None) or getattr(res, "validator", None)
+        if v is not None:
+            # Check v.stats first
+            if hasattr(v, "stats") and isinstance(v.stats, dict):
+                ap_s = v.stats.get("metrics/mAP_small(B)")
+                ap_m = v.stats.get("metrics/mAP_medium(B)")
+                ap_l = v.stats.get("metrics/mAP_large(B)")
+
+            # Extract ground truth object counts from gdict
+            gdict = getattr(v, "gdict", None)
+            if gdict and isinstance(gdict, dict) and "annotations" in gdict:
+                anns = gdict["annotations"]
                 n_s = len([a for a in anns if a.get("area", 0) < 1024 and not a.get("iscrowd", 0)])
                 n_m = len([a for a in anns if 1024 <= a.get("area", 0) < 9216 and not a.get("iscrowd", 0)])
                 n_l = len([a for a in anns if a.get("area", 0) >= 9216 and not a.get("iscrowd", 0)])
-        except Exception as e:
-            print(f"[WARN] Object count extraction failed: {e}")
+
+            # Fallback to direct COCOeval if ap_s is still None
+            if (ap_s is None or n_s is None) and getattr(v, "gdict", None) and getattr(v, "jdict", None):
+                try:
+                    from faster_coco_eval import COCO, COCOeval_faster
+                    anno = COCO(v.gdict)
+                    if n_s is None:
+                        anns = anno.anns.values()
+                        n_s = len([a for a in anns if a.get("area", 0) < 1024 and not a.get("iscrowd", 0)])
+                        n_m = len([a for a in anns if 1024 <= a.get("area", 0) < 9216 and not a.get("iscrowd", 0)])
+                        n_l = len([a for a in anns if a.get("area", 0) >= 9216 and not a.get("iscrowd", 0)])
+                    pred = anno.loadRes(v.jdict)
+                    val_eval = COCOeval_faster(anno, pred, iouType="bbox")
+                    val_eval.evaluate()
+                    val_eval.accumulate()
+                    val_eval.summarize()
+                    if hasattr(val_eval, "stats") and len(val_eval.stats) >= 6:
+                        ap_s = val_eval.stats[3]
+                        ap_m = val_eval.stats[4]
+                        ap_l = val_eval.stats[5]
+                except Exception as e:
+                    print(f"[WARN] faster-coco-eval extraction failed: {e}")
 
         row = {
             "ckpt": run_name,
