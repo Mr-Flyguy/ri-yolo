@@ -13,7 +13,7 @@ import pandas as pd
 
 
 LAMBDA_MAP = {
-    "e3p__pos-postsppf__s0": 0.0,
+    # Only runs where RSL loss was active (use_rsl=True, lambda_tv > 0)
     "e6p__lam-1e-5__s0": 0.00001,
     "e6p__lam-1e-4__s0": 0.0001,
     "e6p__lam-1e-4__s1": 0.0001,
@@ -21,10 +21,9 @@ LAMBDA_MAP = {
     "e6p__lam-1e-3__s0": 0.001,
     "e6p__lam-1e-2__s0": 0.01,
     "e6p__lam-1e-1__s0": 0.1,
-    "e7p__nwd-calib-norsl__s0": 0.0,
     "e7p__nwd-calib__s0": 0.001,
     "e7p__nwd-scaleinv__s0": 0.001,
-    "e7p__nwd-sizegate__s0": 0.001,
+    "e7p__nwd-sizegate__s0": 0.0001,
 }
 
 

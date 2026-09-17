@@ -24,6 +24,8 @@ def resolve_ckpt(run_tag):
         ]
     else:
         candidates = [
+            f"runs_fixed/detect/runs/{run_tag}/weights/best.pt",
+            f"runs_fixed/{run_tag}/weights/best.pt",
             f"runs/detect/runs/{run_tag}/weights/best.pt",
             f"runs/{run_tag}/weights/best.pt",
         ]

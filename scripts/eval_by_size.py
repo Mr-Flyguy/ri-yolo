@@ -24,17 +24,21 @@ def resolve_ckpt(ck_str):
     p = Path(ck_str)
     if p.exists():
         return str(p)
-    # Check alternate under runs/detect/runs
-    alt = Path("runs") / "detect" / ck_str
-    if alt.exists():
-        return str(alt)
-    alt2 = Path("runs") / "detect" / "runs" / p.name
-    if alt2.exists():
-        return str(alt2)
-    # Check recursive
-    matches = list(Path("runs").glob(f"**/{p.name}"))
-    if matches:
-        return str(matches[0])
+    target_dir = "runs_fixed" if "runs_fixed" in str(ck_str) else "runs"
+    # Check direct alternatives
+    for base in [target_dir, "runs_fixed" if target_dir == "runs" else "runs"]:
+        alt = Path(base) / ck_str
+        if alt.exists():
+            return str(alt)
+        alt_detect = Path(base) / "detect" / ck_str
+        if alt_detect.exists():
+            return str(alt_detect)
+        alt_nested = Path(base) / "detect" / "runs" / p.name
+        if alt_nested.exists():
+            return str(alt_nested)
+        matches = list(Path(base).glob(f"**/{p.name}"))
+        if matches:
+            return str(matches[0])
     return ck_str
 
 
@@ -100,17 +104,31 @@ def main():
         rows.append(row)
         print(f"[RESULT] {row}")
 
+    existing_rows = {}
+    if os.path.exists(args.out):
+        try:
+            with open(args.out, "r", newline="") as f:
+                reader = csv.DictReader(f)
+                for r in reader:
+                    existing_rows[r["ckpt"]] = r
+        except Exception as e:
+            print(f"[WARN] Failed to read existing {args.out}: {e}")
+
+    for r in rows:
+        existing_rows[r["ckpt"]] = r
+
+    final_rows = list(existing_rows.values())
     out_dir = os.path.dirname(os.path.abspath(args.out))
     if out_dir:
         os.makedirs(out_dir, exist_ok=True)
 
     with open(args.out, "w", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
+        writer = csv.DictWriter(f, fieldnames=list(final_rows[0].keys()))
         writer.writeheader()
-        writer.writerows(rows)
+        writer.writerows(final_rows)
 
     print(f"\n[SUCCESS] Table saved to {args.out}:")
-    for r in rows:
+    for r in final_rows:
         print(r)
 
 

@@ -1,0 +1,6 @@
+panel,family,run,epochs,close_mosaic,clean_pct,mAP50,mAP50_95
+epochs,baseline,e2p__baseline__mean100,100,10,10.0,0.6897249999999999,0.4314
+epochs,postsppf,e3p_e2p__postsppf__mean100,100,10,10.0,0.69615,0.43479999999999996
+mosaic,postsppf,e4p__mosaic-close0__s0,100,0,0.0,0.6903,0.435
+mosaic,postsppf,e4p__mosaic-close50__s0,100,50,50.0,0.6929,0.4323
+mosaic,postsppf,e3p__pos-postsppf__s0,100,10,10.0,0.6937,0.4348

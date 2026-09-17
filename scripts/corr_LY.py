@@ -35,19 +35,29 @@ def resolve_checkpoint(ckpt_str):
     if ckpt_path.exists():
         return str(ckpt_path)
 
-    # Search recursively under runs/
-    print(f"[INFO] Path '{ckpt_str}' not directly found, scanning runs/ for matches...")
+    # Search recursively under runs_fixed/ and runs/
+    print(f"[INFO] Path '{ckpt_str}' not directly found, scanning directories for matches...")
     patterns = [
         f"**/{ckpt_path.name}",
         f"**/{ckpt_path.stem}*/**/*.pt",
     ]
     run_hint = ckpt_path.parent.parent.name if ckpt_path.parent.name == "weights" else ckpt_path.stem
+    target_dir = "runs_fixed" if "runs_fixed" in str(ckpt_str) else "runs"
+    search_dirs = [Path(target_dir), Path("runs_fixed" if target_dir == "runs" else "runs")]
+
     all_matches = []
-    for pat in patterns:
-        all_matches.extend(list(Path("runs").glob(pat)))
+    for sdir in search_dirs:
+        if sdir.exists():
+            for pat in patterns:
+                all_matches.extend(list(sdir.glob(pat)))
 
     # Filter with run_hint
     filtered = [m for m in all_matches if run_hint in str(m) and m.is_file()]
+    # Prioritize matches containing target_dir
+    prioritized = [m for m in filtered if target_dir in str(m)]
+    if prioritized:
+        print(f"[INFO] Resolved checkpoint '{ckpt_str}' -> '{prioritized[0]}'")
+        return str(prioritized[0])
     if filtered:
         print(f"[INFO] Resolved checkpoint '{ckpt_str}' -> '{filtered[0]}'")
         return str(filtered[0])

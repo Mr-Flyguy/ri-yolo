@@ -1,6 +1,6 @@
 config,n_runs,mAP50,mAP50_sd,mAP50_ci95,mAP50_95,mAP50_95_sd,gamma_final,delta_mAP50_pp,delta_mAP50_95_pp
-Baseline (YOLOv8s),2,0.6888,0.0028,0.0039,0.43,0.0006,NA,+0.00,+0.00
-+ Spatial Retinex Decoupling (RFD post-SPPF),4,0.6962,0.0026,0.0026,0.4348,0.0016,+0.003897,+0.74,+0.48
-"+ Retinex Smoothness Loss (RSL, lambda=0.01)",1,0.696,,,0.4355,,+0.002626,+0.72,+0.55
-"+ Physical Bounding Box Metric (NWD abs, C=10.24)",1,0.6976,,,0.4376,,+0.011795,+0.88,+0.76
-"Capacity Control (RFDBlockNoGate, 2.6M params)",1,0.6924,,,0.437,,+0.008713,+0.36,+0.70
+Baseline (YOLOv8s),4,0.6897,0.0021,0.002,0.4314,0.0021,NA,+0.00,+0.00
++ Spatial Retinex Decoupling (RFD post-SPPF),4,0.6962,0.0026,0.0026,0.4348,0.0016,+0.003897,+0.64,+0.34
+"+ Retinex Smoothness Loss (RSL, lambda=0.01)",1,0.696,,,0.4355,,+0.002626,+0.63,+0.41
+"+ Physical Bounding Box Metric (NWD abs, C=10.24)",1,0.6976,,,0.4376,,+0.011795,+0.79,+0.62
+"Capacity Control (RFDBlockNoGate, 2.6M params)",3,0.696,0.0038,0.0043,0.437,0.0002,+0.002714,+0.63,+0.56
