@@ -251,23 +251,38 @@ def build_c2_table1():
 def build_c2_branch_scale():
     """Build tables/C2_branch_scale.csv analyzing two-stage collapse dynamics."""
     t1_p = Path("tables/C2_table1.csv")
+    diag_p = Path("tables/C2_final_diag.csv")
+    
     if not t1_p.exists():
         build_c2_table1()
-    df = pd.read_csv(t1_p)
+    if not diag_p.exists():
+        print("[WARN] tables/C2_final_diag.csv not found. Please run final_diag.py first.")
+        return
+        
+    df_t1 = pd.read_csv(t1_p)
+    df_diag = pd.read_csv(diag_p)
+    
+    # Extract lambda_tv from table1
+    lam_map = dict(zip(df_t1["run"], df_t1["lambda_tv"]))
+    
     rows = []
-    for _, r in df.iterrows():
+    for _, r in df_diag.iterrows():
         try:
+            run_name = str(r["run"])
+            lam_tv = lam_map.get(run_name, "NA")
+            
             l_mean = float(r["L_mean"])
             l_std = float(r["L_std"])
             gamma = float(r["gamma_final"])
-            mult = round(1.0 - l_mean, 4)
+            mult = float(r["mean_one_minus_L"])
             eff_scale = round(gamma * mult, 6)
+            
             rows.append({
-                "run": r["run"],
-                "lambda_tv": r["lambda_tv"],
+                "run": run_name,
+                "lambda_tv": lam_tv,
                 "L_mean": l_mean,
                 "L_std": l_std,
-                "mean_branch_multiplier": mult,
+                "mean_one_minus_L": mult,
                 "gamma_final": gamma,
                 "effective_scale": f"{eff_scale:.6f}",
             })
@@ -303,11 +318,24 @@ def build_c2_gamma_curves():
     frames = []
     for f in files:
         run_name = Path(f).parent.name
+        
+        # Exclude baseline runs as they don't have an RFDBlock and any rfd_log.csv is synthetic
+        if "baseline" in run_name.lower():
+            print(f"[INFO] Skipping rfd_log.csv for {run_name} (baseline models have no RFDBlock)")
+            continue
+            
         try:
             df = pd.read_csv(f)
             df["run"] = run_name
-            frames.append(df)
-            print(f"[INFO] Found rfd_log.csv for {run_name} ({len(df)} epochs)")
+            
+            # Filter out synthetic filler rows (where L_mean=0.5, L_min=0.0, L_max=0.5)
+            if "L_mean" in df.columns:
+                mask = ~((df["L_mean"] == 0.5) & (df["L_min"] == 0.0) & (df["L_max"] == 0.5))
+                df = df[mask]
+                
+            if len(df) > 0:
+                frames.append(df)
+                print(f"[INFO] Found rfd_log.csv for {run_name} ({len(df)} valid epochs)")
         except Exception as e:
             print(f"[WARN] Error reading {f}: {e}")
 
