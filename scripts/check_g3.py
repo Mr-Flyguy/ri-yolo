@@ -2,6 +2,10 @@ import pandas as pd
 from pathlib import Path
 
 def check_rsl_loss():
+    import sys
+    Path("artifacts/phase2").mkdir(parents=True, exist_ok=True)
+    sys.stdout = open("artifacts/phase2/g3_rsl_audit.txt", "w", encoding="utf-8")
+    
     print("="*80)
     print("  G.3: ПРОВЕРКА КОЛОНОК RSL LOSS В results.csv")
     print("="*80)

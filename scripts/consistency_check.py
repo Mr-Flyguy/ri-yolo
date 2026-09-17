@@ -3,6 +3,9 @@ from pathlib import Path
 import sys
 
 def check_consistency():
+    import sys
+    Path("artifacts/phase2").mkdir(parents=True, exist_ok=True)
+    sys.stdout = open("artifacts/phase2/g6_consistency_report.txt", "w", encoding="utf-8")
     print("="*80)
     print("  G.6: CONSISTENCY CHECKER (C2 TABLES)")
     print("="*80)
