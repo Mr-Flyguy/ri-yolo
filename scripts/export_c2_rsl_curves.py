@@ -26,11 +26,42 @@ LAMBDA_MAP = {
     "e6p__lam-1e-1__s0": 0.1,
     "e7p__nwd-calib__s0": 0.01,
     "e7p__nwd-scaleinv__s0": 0.01,
-    "e7p__nwd-sizegate__s0": 0.01,
+    "e7p__nwd-sizegate__s0__broken": 0.01,
+    "e7p__nwd-sizegate__s0__fixed": 0.0001,
 }
 
 
 def find_results_csv(run_name):
+    if run_name == "e7p__nwd-sizegate__s0__broken":
+        candidates = [
+            Path("runs/detect/runs/e7p__nwd-sizegate__s0/results.csv"),
+            Path("runs/e7p__nwd-sizegate__s0/results.csv"),
+        ]
+        for c in candidates:
+            if c.exists():
+                return c
+        matches = list(Path("runs").glob("**/e7p__nwd-sizegate__s0/results.csv"))
+        non_fixed = [m for m in matches if "runs_fixed" not in str(m)]
+        if non_fixed:
+            return non_fixed[0]
+        return None
+    elif run_name == "e7p__nwd-sizegate__s0__fixed":
+        candidates = [
+            Path("runs/detect/runs_fixed/e7p__nwd-sizegate__s0/results.csv"),
+            Path("runs_fixed/e7p__nwd-sizegate__s0/results.csv"),
+            Path("runs_fixed/detect/runs/e7p__nwd-sizegate__s0/results.csv"),
+        ]
+        for c in candidates:
+            if c.exists():
+                return c
+        for base in ["runs_fixed", "runs"]:
+            if Path(base).exists():
+                matches = list(Path(base).glob("**/e7p__nwd-sizegate__s0/results.csv"))
+                fixed = [m for m in matches if "runs_fixed" in str(m)]
+                if fixed:
+                    return fixed[0]
+        return None
+
     candidates = [
         Path("runs_fixed") / run_name / "results.csv",
         Path("runs_fixed/detect/runs") / run_name / "results.csv",
@@ -56,6 +87,35 @@ def find_args_yaml(run_name, results_csv_path=None):
         cand = results_csv_path.parent / "args.yaml"
         if cand.exists():
             return cand
+    if run_name == "e7p__nwd-sizegate__s0__broken":
+        candidates = [
+            Path("runs/detect/runs/e7p__nwd-sizegate__s0/args.yaml"),
+            Path("runs/e7p__nwd-sizegate__s0/args.yaml"),
+        ]
+        for c in candidates:
+            if c.exists():
+                return c
+        matches = list(Path("runs").glob("**/e7p__nwd-sizegate__s0/args.yaml"))
+        non_fixed = [m for m in matches if "runs_fixed" not in str(m)]
+        if non_fixed:
+            return non_fixed[0]
+        return None
+    elif run_name == "e7p__nwd-sizegate__s0__fixed":
+        candidates = [
+            Path("runs/detect/runs_fixed/e7p__nwd-sizegate__s0/args.yaml"),
+            Path("runs_fixed/e7p__nwd-sizegate__s0/args.yaml"),
+            Path("runs_fixed/detect/runs/e7p__nwd-sizegate__s0/args.yaml"),
+        ]
+        for c in candidates:
+            if c.exists():
+                return c
+        for base in ["runs_fixed", "runs"]:
+            if Path(base).exists():
+                matches = list(Path(base).glob("**/e7p__nwd-sizegate__s0/args.yaml"))
+                fixed = [m for m in matches if "runs_fixed" in str(m)]
+                if fixed:
+                    return fixed[0]
+        return None
     candidates = [
         Path("runs_fixed") / run_name / "args.yaml",
         Path("runs_fixed/detect/runs") / run_name / "args.yaml",

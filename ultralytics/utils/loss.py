@@ -142,6 +142,9 @@ class BboxLoss(nn.Module):
         stride: torch.Tensor,
     ) -> tuple[torch.Tensor, torch.Tensor]:
         """Compute IoU and DFL losses for bounding boxes."""
+        if not hasattr(self, "_fg_dbg"):
+            self._fg_dbg = True
+            print(f"[FG] positive anchors N = {int(fg_mask.sum())}")
         weight = target_scores[fg_mask].sum(-1, keepdim=True)
         iou = bbox_iou(pred_bboxes[fg_mask], target_bboxes[fg_mask], xywh=False, CIoU=True)
         if getattr(self, "use_nwd", False):
