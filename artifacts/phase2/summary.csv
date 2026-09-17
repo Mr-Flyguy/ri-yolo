@@ -9,4 +9,4 @@ e6p__lam-1e-5__s0,E6,ultralytics/cfg/models/v8/yolov8s-rfd-postsppf.yaml,0,100,1
 e6p__lam-1e-4__s1,E6,ultralytics/cfg/models/v8/yolov8s-rfd-postsppf.yaml,1,100,0.0001,True,False,NA,NA,NA,0.6942,0.4322,+0.007996,NA
 e6p__lam-1e-4__s2,E6,ultralytics/cfg/models/v8/yolov8s-rfd-postsppf.yaml,2,100,0.0001,True,False,NA,NA,NA,0.6978,0.4356,+0.002247,NA
 e7p__nwd-calib-norsl__s0,E7,ultralytics/cfg/models/v8/yolov8s-rfd-postsppf.yaml,0,100,0.0,False,True,abs,10.24,NA,0.6986,0.4357,+0.017899,NA
-e7p__nwd-sizegate__s0,E7,ultralytics/cfg/models/v8/yolov8s-rfd-postsppf.yaml,0,100,0.0001,True,True,sizegate,10.24,5.12,0.6933,0.4311,-0.006260,NA
+e7p__nwd-sizegate__s0,E7,ultralytics/cfg/models/v8/yolov8s-rfd-postsppf.yaml,0,1,0.0001,True,True,sizegate,10.24,5.12,0.3166,0.1593,+0.001647,NA
