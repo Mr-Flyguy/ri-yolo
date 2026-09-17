@@ -1,0 +1,25 @@
+comparison,metric,mean_g1,std_g1,n_g1,mean_g2,std_g2,n_g2,diff_pp,t,df,p_welch,ci_95,U,p_mw,d,min_p
+base_vs_postsppf(lam=0),mAP50,NA,NA,0,0.6877,0.0048,4,NA,NA,NA,NA,NA,NA,NA,NA,NA
+base_vs_postsppf(lam=0),mAP50_95,NA,NA,0,0.422,0.0027,4,NA,NA,NA,NA,NA,NA,NA,NA,NA
+base_vs_postsppf(lam=0),L_mean,NA,NA,0,0.6101,0.1518,4,NA,NA,NA,NA,NA,NA,NA,NA,NA
+base_vs_postsppf(lam=0),L_std,NA,NA,0,0.3547,0.0527,4,NA,NA,NA,NA,NA,NA,NA,NA,NA
+postsppf_vs_lam-1e-4,mAP50,0.6877,0.0048,4,0.6861,0.0029,3,0.1633,0.5543,5,0.6037,"[-0.0041, 0.0074]",7.0,0.8571,0.3915,0.0571
+postsppf_vs_lam-1e-4,mAP50_95,0.422,0.0027,4,0.4226,0.0024,3,-0.0542,-0.2775,5,0.7931,"[-0.0044, 0.0033]",5.5,1.0,-0.2082,0.0571
+postsppf_vs_lam-1e-4,L_mean,0.6101,0.1518,4,0.9196,0.0734,3,-30.95,-3.56,5,0.0193,"[-0.4799, -0.1391]",0.0,0.0571,-2.4479,0.0571
+postsppf_vs_lam-1e-4,L_std,0.3547,0.0527,4,0.1406,0.1033,3,21.4108,3.2825,5,0.0515,"[0.0863, 0.3420]",12.0,0.0571,2.7784,0.0571
+postsppf_vs_lam-1e-5,mAP50,0.6877,0.0048,4,0.6833,NA,1,0.44,NA,NA,NA,NA,NA,NA,NA,NA
+postsppf_vs_lam-1e-5,mAP50_95,0.422,0.0027,4,0.4223,NA,1,-0.0275,NA,NA,NA,NA,NA,NA,NA,NA
+postsppf_vs_lam-1e-5,L_mean,0.6101,0.1518,4,0.8178,NA,1,-20.77,NA,NA,NA,NA,NA,NA,NA,NA
+postsppf_vs_lam-1e-5,L_std,0.3547,0.0527,4,0.2431,NA,1,11.1575,NA,NA,NA,NA,NA,NA,NA,NA
+postsppf_vs_lam-1e-3,mAP50,0.6877,0.0048,4,0.6867,NA,1,0.1,NA,NA,NA,NA,NA,NA,NA,NA
+postsppf_vs_lam-1e-3,mAP50_95,0.422,0.0027,4,0.4226,NA,1,-0.0575,NA,NA,NA,NA,NA,NA,NA,NA
+postsppf_vs_lam-1e-3,L_mean,0.6101,0.1518,4,0.5001,NA,1,11.0,NA,NA,NA,NA,NA,NA,NA,NA
+postsppf_vs_lam-1e-3,L_std,0.3547,0.0527,4,0.0016,NA,1,35.3075,NA,NA,NA,NA,NA,NA,NA,NA
+postsppf_vs_lam-1e-2,mAP50,0.6877,0.0048,4,0.6852,NA,1,0.25,NA,NA,NA,NA,NA,NA,NA,NA
+postsppf_vs_lam-1e-2,mAP50_95,0.422,0.0027,4,0.4229,NA,1,-0.0875,NA,NA,NA,NA,NA,NA,NA,NA
+postsppf_vs_lam-1e-2,L_mean,0.6101,0.1518,4,0.5003,NA,1,10.98,NA,NA,NA,NA,NA,NA,NA,NA
+postsppf_vs_lam-1e-2,L_std,0.3547,0.0527,4,0.0006,NA,1,35.4075,NA,NA,NA,NA,NA,NA,NA,NA
+postsppf_vs_lam-1e-1,mAP50,0.6877,0.0048,4,0.6862,NA,1,0.15,NA,NA,NA,NA,NA,NA,NA,NA
+postsppf_vs_lam-1e-1,mAP50_95,0.422,0.0027,4,0.4232,NA,1,-0.1175,NA,NA,NA,NA,NA,NA,NA,NA
+postsppf_vs_lam-1e-1,L_mean,0.6101,0.1518,4,0.5001,NA,1,11.0,NA,NA,NA,NA,NA,NA,NA,NA
+postsppf_vs_lam-1e-1,L_std,0.3547,0.0527,4,0.0001,NA,1,35.4575,NA,NA,NA,NA,NA,NA,NA,NA
