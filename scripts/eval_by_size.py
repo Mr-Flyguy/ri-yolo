@@ -77,9 +77,10 @@ def main():
                 val_eval.evaluate()
                 val_eval.accumulate()
                 val_eval.summarize()
-                ap_s = val_eval.stats_as_dict.get("AP_small")
-                ap_m = val_eval.stats_as_dict.get("AP_medium")
-                ap_l = val_eval.stats_as_dict.get("AP_large")
+                if ap_s is None and hasattr(val_eval, "stats") and len(val_eval.stats) >= 6:
+                    ap_s = val_eval.stats[3]
+                    ap_m = val_eval.stats[4]
+                    ap_l = val_eval.stats[5]
         except Exception as e:
             print(f"[WARN] faster-coco-eval extraction failed: {e}")
 
