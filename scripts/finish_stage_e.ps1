@@ -82,5 +82,15 @@ Write-Host "`n>>> [3/3] REGENERATING STAGE E TABLES (build_c2_stage_e.py)" -Fore
 python scripts/build_c2_stage_e.py
 
 Write-Host "`n====================================================================" -ForegroundColor Cyan
-Write-Host "  COMPLETED: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')" -ForegroundColor Cyan
+Write-Host "  TABLES SUMMARY:" -ForegroundColor Cyan
 Write-Host "====================================================================" -ForegroundColor Cyan
+if (Test-Path "tables/C2_table2_bysize.csv") {
+    Get-Content "tables/C2_table2_bysize.csv"
+}
+
+Write-Host "`n====================================================================" -ForegroundColor Green
+Write-Host "  COMPLETED! To commit results, run:" -ForegroundColor Green
+Write-Host "  git add tables/ artifacts/phase2/" -ForegroundColor White
+Write-Host "  git commit -m `"feat(c2): finalize Stage E size metrics and tables`"" -ForegroundColor White
+Write-Host "  git push origin recovery-v2" -ForegroundColor White
+Write-Host "====================================================================" -ForegroundColor Green
