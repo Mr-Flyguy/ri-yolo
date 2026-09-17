@@ -4,6 +4,7 @@ import sys
 import pandas as pd
 from pathlib import Path
 import glob
+import tarfile
 
 def run_command(cmd, capture=True):
     print(f"Running: {cmd}")
@@ -24,8 +25,11 @@ def generate_h5_table():
     output += "---|---|---|---\n"
     
     # Get all potential runs from C2_final_metrics
-    df_metrics = pd.read_csv("tables/C2_final_metrics.csv")
-    runs = df_metrics["run"].unique()
+    try:
+        df_metrics = pd.read_csv("tables/C2_final_metrics.csv")
+        runs = df_metrics["run"].unique()
+    except:
+        runs = []
     
     # Load C2_gamma_curves to count rows per run
     try:
@@ -64,6 +68,24 @@ def generate_h5_table():
     
     return output
 
+def create_archive():
+    print("\n=== Creating archive ===")
+    tar_name = "C2_data_final.tar.gz"
+    try:
+        with tarfile.open(tar_name, "w:gz") as tar:
+            # Add tables/C2_*.csv
+            for file in glob.glob("tables/C2_*.csv"):
+                print(f"Adding {file} to archive")
+                tar.add(file, arcname=file)
+            
+            # Add artifacts/phase2
+            if os.path.exists("artifacts/phase2"):
+                print(f"Adding artifacts/phase2 to archive")
+                tar.add("artifacts/phase2", arcname="artifacts/phase2")
+        print(f"[SUCCESS] Archive created: {tar_name}")
+    except Exception as e:
+        print(f"[ERROR] Failed to create archive: {e}")
+
 def main():
     print("=== Re-generating all stage H tables ===")
     run_command("python scripts/build_c2_stage_e.py", capture=False)
@@ -77,8 +99,7 @@ def main():
     h5_content = generate_h5_table()
     print(h5_content)
     
-    print("\n=== Creating archive ===")
-    run_command("tar czf C2_data_final.tar.gz tables/C2_*.csv artifacts/phase2/", capture=False)
+    create_archive()
     
     print("\n=== Writing CLAUDE_RESPONSE_H.md ===")
     

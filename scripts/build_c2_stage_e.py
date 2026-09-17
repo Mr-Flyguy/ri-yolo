@@ -29,8 +29,6 @@ def build_c2_table1():
     df_diag = pd.read_csv(diag_p)
     df_hyp = pd.read_csv(hyperparams_p)
 
-    # Clean up 'run' names if needed to match (e.g. trailing paths), but assume they match in final_metrics
-    # Merge all three on 'run'
     merged = pd.merge(df_hyp, df_metrics, on="run", how="inner")
     merged = pd.merge(merged, df_diag, on="run", how="inner")
 
@@ -157,6 +155,14 @@ def build_c2_branch_scale():
 
 def build_c2_gamma_curves():
     """Scan and aggregate rfd_log.csv across run directories."""
+    hyperparams_p = Path("tables/C2_hyperparams.csv")
+    if not hyperparams_p.exists():
+        print("[WARN] C2_hyperparams.csv not found.")
+        return
+        
+    df_hyp = pd.read_csv(hyperparams_p)
+    valid_runs = set(df_hyp["run"].unique())
+
     patterns = [
         "runs/detect/runs/**/rfd_log.csv",
         "runs/detect/runs_fixed/**/rfd_log.csv",
@@ -174,15 +180,25 @@ def build_c2_gamma_curves():
 
     frames = []
     for f in files:
-        run_name = Path(f).parent.name
-        
+        # C2_hyperparams.csv uses either basename or full relative path
+        # Let's find if the file matches any valid_runs
+        run_name = None
+        for vr in valid_runs:
+            if f.replace("\\", "/").startswith(vr + "/rfd_log.csv") or vr == Path(f).parent.name:
+                run_name = vr
+                break
+                
+        if not run_name:
+            continue
+            
         if "baseline" in run_name.lower():
             print(f"[INFO] Skipping rfd_log.csv for {run_name} (baseline models have no RFDBlock)")
             continue
             
         try:
             df = pd.read_csv(f)
-            df["run"] = run_name
+            # Use the basename for consistency with C2_gamma_curves.csv
+            df["run"] = Path(f).parent.name
             
             if "L_mean" in df.columns:
                 mask = ~((df["L_mean"] == 0.5) & (df["L_min"] == 0.0) & (df["L_max"] == 0.5))
@@ -200,6 +216,8 @@ def build_c2_gamma_curves():
             os.makedirs(os.path.dirname(p), exist_ok=True)
             merged.to_csv(p, index=False)
             print(f"[SUCCESS] Exported gamma curves to {p} ({len(merged)} rows)")
+    else:
+        print("\n[INFO] No valid rfd_log.csv files found after filtering.")
 
 
 def build_c2_metrics_unified():
@@ -211,7 +229,6 @@ def build_c2_metrics_unified():
 
     df_size = pd.read_csv(size_p)
     df_size["source"] = "model.val (plots=False, save_json=True)"
-    # Reorder columns
     cols = ["ckpt", "source", "mAP50", "mAP50_95", "AP_small", "AP_medium", "AP_large"]
     if "n_small" in df_size.columns:
         cols.extend(["n_small", "n_medium", "n_large"])
