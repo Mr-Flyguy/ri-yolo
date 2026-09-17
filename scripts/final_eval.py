@@ -20,6 +20,23 @@ from ultralytics import YOLO
 
 
 RUN_SPECS = [
+    ("e2p__baseline__s0", [
+        "runs/detect/runs/e2p__baseline__s0/weights/best.pt",
+        "runs/e2p__baseline__s0/weights/best.pt",
+    ]),
+    ("e2p__baseline__s1", [
+        "runs/detect/runs/e2p__baseline__s1/weights/best.pt",
+        "runs/e2p__baseline__s1/weights/best.pt",
+    ]),
+    ("e2p__baseline__s2", [
+        "runs/detect/runs/e2p__baseline__s2/weights/best.pt",
+        "runs/e2p__baseline__s2/weights/best.pt",
+    ]),
+    ("e2p__baseline__s3", [
+        "runs/detect/runs/e2p__baseline__s3/weights/best.pt",
+        "runs/e2p__baseline__s3/weights/best.pt",
+    ]),
+
     ("e2p__postsppf__s0", [
         "runs/detect/runs/e3p__pos-postsppf__s0/weights/best.pt",
         "runs/detect/runs/e2p__postsppf__s0/weights/best.pt",
