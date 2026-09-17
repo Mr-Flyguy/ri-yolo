@@ -127,11 +127,12 @@ def main():
     if not rfd_modules:
         raise RuntimeError("No RFDBlock module found in the checkpoint model!")
     rfd = rfd_modules[0]
-    rfd.train()  # Ensure _illumination_map is recorded in forward pass
-
+    # Keep entire model strictly in eval() mode. Do NOT call rfd.train()
+    # because rfd.cv1 (BatchNorm2d) would recompute stats on single image batches.
+    # Instead, hook directly onto ill_estimator output!
     buf = {}
-    rfd.register_forward_hook(
-        lambda m, i, o: buf.__setitem__("L", getattr(m, "_ill_stat", getattr(m, "_illumination_map", None)))
+    hook = rfd.ill_estimator.register_forward_hook(
+        lambda m, i, o: buf.__setitem__("L", o.detach())
     )
 
     paths = resolve_images(args.images, n_max=args.n)

@@ -52,7 +52,7 @@ def main():
         print(f"\n{'='*70}\n[INFO] Evaluating {run_name} from {resolved} on split '{args.split}'...\n{'='*70}")
 
         model = YOLO(resolved)
-        custom = {"rect": True}
+        custom = {"rect": False}
         val_args = {
             **model.overrides,
             **custom,

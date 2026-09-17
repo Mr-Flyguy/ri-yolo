@@ -266,10 +266,12 @@ def main():
             continue
 
         rfd = rfd_modules[0]
-        rfd.train()  # Ensure hook captures illumination map
+        # Keep entire model strictly in eval() mode. Do NOT call rfd.train()
+        # because rfd.cv1 (BatchNorm2d) would recompute stats on single image batches.
+        # Instead, hook directly onto ill_estimator output!
         buf = {}
-        hook = rfd.register_forward_hook(
-            lambda m, i, o: buf.__setitem__("L", getattr(m, "_ill_stat", getattr(m, "_illumination_map", None)))
+        hook = rfd.ill_estimator.register_forward_hook(
+            lambda m, i, o: buf.__setitem__("L", o.detach())
         )
 
         L_all, Y_all = [], []

@@ -147,7 +147,7 @@ def main():
         "conf": 0.001,
         "iou": 0.6,
         "max_det": 300,
-        "rect": True,
+        "rect": False,
         "split": "val",
         "device": str(device),
         "half": False,
