@@ -87,7 +87,11 @@ def generate_report():
     # G.6
     out.append("\n## G.6. Сверка всех таблиц между собой")
     out.append("\n**Дословный вывод скрипта consistency_check.py:**")
-    out.append("```\n" + run_cmd("python scripts/consistency_check.py") + "\n```")
+    try:
+        with open("artifacts/phase2/g6_consistency_report.txt", "r", encoding="utf-8") as f:
+            out.append("```\n" + f.read().strip() + "\n```")
+    except Exception as e:
+        out.append("```\nОшибка чтения отчета: " + str(e) + "\n```")
     out.append("\nСкрипт `scripts/consistency_check.py` приложен отдельно.")
     
     with open("CLAUDE_RESPONSE.md", "w", encoding="utf-8") as f:
