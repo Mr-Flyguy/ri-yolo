@@ -12,6 +12,9 @@ from pathlib import Path
 import pandas as pd
 
 
+import yaml
+
+
 LAMBDA_MAP = {
     # Only runs where RSL loss was active (use_rsl=True, lambda_tv > 0)
     "e6p__lam-1e-5__s0": 0.00001,
@@ -21,9 +24,9 @@ LAMBDA_MAP = {
     "e6p__lam-1e-3__s0": 0.001,
     "e6p__lam-1e-2__s0": 0.01,
     "e6p__lam-1e-1__s0": 0.1,
-    "e7p__nwd-calib__s0": 0.001,
-    "e7p__nwd-scaleinv__s0": 0.001,
-    "e7p__nwd-sizegate__s0": 0.0001,
+    "e7p__nwd-calib__s0": 0.01,
+    "e7p__nwd-scaleinv__s0": 0.01,
+    "e7p__nwd-sizegate__s0": 0.01,
 }
 
 
@@ -31,6 +34,7 @@ def find_results_csv(run_name):
     candidates = [
         Path("runs_fixed") / run_name / "results.csv",
         Path("runs_fixed/detect/runs") / run_name / "results.csv",
+        Path("runs/detect/runs_fixed") / run_name / "results.csv",
         Path("runs/detect/runs") / run_name / "results.csv",
         Path("runs") / run_name / "results.csv",
         Path(f"runs/detect/{run_name}/results.csv"),
@@ -38,11 +42,52 @@ def find_results_csv(run_name):
     for c in candidates:
         if c.exists():
             return c
-    # Recursive glob under runs/
-    matches = list(Path("runs").glob(f"**/{run_name}/results.csv"))
-    if matches:
-        return matches[0]
+    # Recursive glob under runs/ and runs_fixed/
+    for base in ["runs_fixed", "runs"]:
+        if Path(base).exists():
+            matches = list(Path(base).glob(f"**/{run_name}/results.csv"))
+            if matches:
+                return matches[0]
     return None
+
+
+def find_args_yaml(run_name, results_csv_path=None):
+    if results_csv_path:
+        cand = results_csv_path.parent / "args.yaml"
+        if cand.exists():
+            return cand
+    candidates = [
+        Path("runs_fixed") / run_name / "args.yaml",
+        Path("runs_fixed/detect/runs") / run_name / "args.yaml",
+        Path("runs/detect/runs_fixed") / run_name / "args.yaml",
+        Path("runs/detect/runs") / run_name / "args.yaml",
+        Path("runs") / run_name / "args.yaml",
+        Path(f"runs/detect/{run_name}/args.yaml"),
+    ]
+    for c in candidates:
+        if c.exists():
+            return c
+    for base in ["runs_fixed", "runs"]:
+        if Path(base).exists():
+            matches = list(Path(base).glob(f"**/{run_name}/args.yaml"))
+            if matches:
+                return matches[0]
+    return None
+
+
+def get_lambda_tv_from_args(args_yaml_path, fallback=None):
+    if not args_yaml_path or not Path(args_yaml_path).exists():
+        return fallback
+    try:
+        with open(args_yaml_path, "r", encoding="utf-8") as f:
+            data = yaml.safe_load(f)
+            if data and "lambda_tv" in data:
+                val = float(data["lambda_tv"])
+                print(f"[INFO] Read lambda_tv={val} from {args_yaml_path}")
+                return val
+    except Exception as e:
+        print(f"[WARN] Error reading {args_yaml_path}: {e}")
+    return fallback
 
 
 def main():
@@ -67,6 +112,9 @@ def main():
             print(f"[WARN] results.csv for {run_name} not found, skipping.")
             continue
 
+        args_path = find_args_yaml(run_name, csv_path)
+        actual_lam = get_lambda_tv_from_args(args_path, fallback=lam)
+
         df = pd.read_csv(csv_path)
         df.columns = [c.strip() for c in df.columns]
 
@@ -80,8 +128,8 @@ def main():
 
         df["train/rsl_loss"] = df["train/rsl_loss"].fillna(0.0)
         df["run"] = run_name
-        df["lambda_tv"] = lam
-        df["weighted_rsl_loss"] = lam * df["train/rsl_loss"]
+        df["lambda_tv"] = actual_lam
+        df["weighted_rsl_loss"] = actual_lam * df["train/rsl_loss"]
         df["train/det_loss"] = df["train/box_loss"] + df["train/cls_loss"] + df["train/dfl_loss"]
 
         df["ratio_rsl_to_box"] = (df["weighted_rsl_loss"] / df["train/box_loss"].replace(0, float("nan"))).fillna(0.0)
@@ -105,7 +153,7 @@ def main():
 
         summary_rows.append({
             "run": run_name,
-            "lambda_tv": lam,
+            "lambda_tv": actual_lam,
             "L_box_mean": round(mean_box, 4),
             "L_cls_mean": round(mean_cls, 4),
             "L_dfl_mean": round(mean_dfl, 4),
