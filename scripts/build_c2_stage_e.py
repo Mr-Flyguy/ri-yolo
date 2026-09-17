@@ -17,227 +17,84 @@ import pandas as pd
 
 def build_c2_table1():
     """Build complete C2_table1.csv containing both E6' and E7' runs."""
-    diag_p = Path("tables/C2_diag.csv")
-    diag_map = {}
-    if diag_p.exists():
-        df_diag = pd.read_csv(diag_p)
-        for _, r in df_diag.iterrows():
-            diag_map[str(r["run"])] = r.to_dict()
+    metrics_p = Path("tables/C2_final_metrics.csv")
+    diag_p = Path("tables/C2_final_diag.csv")
+    hyperparams_p = Path("tables/C2_hyperparams.csv")
+    
+    if not metrics_p.exists() or not diag_p.exists() or not hyperparams_p.exists():
+        print("[WARN] Missing source files (metrics, diag, or hyperparams).")
+        return
+        
+    df_metrics = pd.read_csv(metrics_p)
+    df_diag = pd.read_csv(diag_p)
+    df_hyp = pd.read_csv(hyperparams_p)
 
-    # Base records for E6' and E7'
-    # Source metadata for all runs
-    specs = [
-        # E3 anchor
-        {
-            "run": "e3p__pos-postsppf__s0",
-            "lambda_tv": 0.0,
-            "use_rsl": False,
-            "use_nwd": False,
-            "nwd_mode": "NA",
-            "nwd_c": "NA",
-            "size_tau": "NA",
-            "mAP50": 0.6937,
-            "mAP50_95": 0.4348,
-            "diag_key": "lam0",
-            "gamma_final": 0.003155,
-        },
-        # E6' TV-loss sweep
-        {
-            "run": "e6p__lam-1e-5__s0",
-            "lambda_tv": 0.00001,
-            "use_rsl": True,
-            "use_nwd": False,
-            "nwd_mode": "NA",
-            "nwd_c": "NA",
-            "size_tau": "NA",
-            "mAP50": 0.6941,
-            "mAP50_95": 0.4317,
-            "diag_key": "e6p__lam-1e-5__s0",
-            "gamma_final": 0.016006,
-        },
-        {
-            "run": "e6p__lam-1e-4__s0",
-            "lambda_tv": 0.0001,
-            "use_rsl": True,
-            "use_nwd": False,
-            "nwd_mode": "NA",
-            "nwd_c": "NA",
-            "size_tau": "NA",
-            "mAP50": 0.6937,
-            "mAP50_95": 0.4349,
-            "diag_key": "e6p__lam-1e-4__s0",
-            "gamma_final": 0.002043,
-        },
-        {
-            "run": "e6p__lam-1e-4__s1",
-            "lambda_tv": 0.0001,
-            "use_rsl": True,
-            "use_nwd": False,
-            "nwd_mode": "NA",
-            "nwd_c": "NA",
-            "size_tau": "NA",
-            "mAP50": 0.6942,
-            "mAP50_95": 0.4322,
-            "diag_key": "e6p__lam-1e-4__s1",
-            "gamma_final": 0.007996,
-        },
-        {
-            "run": "e6p__lam-1e-4__s2",
-            "lambda_tv": 0.0001,
-            "use_rsl": True,
-            "use_nwd": False,
-            "nwd_mode": "NA",
-            "nwd_c": "NA",
-            "size_tau": "NA",
-            "mAP50": 0.6978,
-            "mAP50_95": 0.4356,
-            "diag_key": "e6p__lam-1e-4__s2",
-            "gamma_final": 0.002247,
-        },
-        {
-            "run": "e6p__lam-1e-3__s0",
-            "lambda_tv": 0.001,
-            "use_rsl": True,
-            "use_nwd": False,
-            "nwd_mode": "NA",
-            "nwd_c": "NA",
-            "size_tau": "NA",
-            "mAP50": 0.6938,
-            "mAP50_95": 0.4303,
-            "diag_key": "e6p__lam-1e-3__s0",
-            "gamma_final": 0.000282,
-        },
-        {
-            "run": "e6p__lam-1e-2__s0",
-            "lambda_tv": 0.01,
-            "use_rsl": True,
-            "use_nwd": False,
-            "nwd_mode": "NA",
-            "nwd_c": "NA",
-            "size_tau": "NA",
-            "mAP50": 0.6960,
-            "mAP50_95": 0.4355,
-            "diag_key": "e6p__lam-1e-2__s0",
-            "gamma_final": 0.002626,
-        },
-        {
-            "run": "e6p__lam-1e-1__s0",
-            "lambda_tv": 0.1,
-            "use_rsl": True,
-            "use_nwd": False,
-            "nwd_mode": "NA",
-            "nwd_c": "NA",
-            "size_tau": "NA",
-            "mAP50": 0.6916,
-            "mAP50_95": 0.4329,
-            "diag_key": "e6p__lam-1e-1__s0",
-            "gamma_final": 0.014175,
-        },
-        # E7' NWD series
-        {
-            "run": "e7p__nwd-calib__s0",
-            "lambda_tv": 0.01,
-            "use_rsl": True,
-            "use_nwd": True,
-            "nwd_mode": "abs",
-            "nwd_c": 10.24,
-            "size_tau": "NA",
-            "mAP50": 0.6976,
-            "mAP50_95": 0.4376,
-            "diag_key": "e7p__nwd-calib__s0",
-            "gamma_final": 0.011795,
-        },
-        {
-            "run": "e7p__nwd-scaleinv__s0",
-            "lambda_tv": 0.01,
-            "use_rsl": True,
-            "use_nwd": True,
-            "nwd_mode": "scaleinv",
-            "nwd_c": 0.3,
-            "size_tau": "NA",
-            "mAP50": 0.6935,
-            "mAP50_95": 0.4367,
-            "diag_key": "e7p__nwd-scaleinv__s0",
-            "gamma_final": 0.008553,
-        },
-        {
-            "run": "e7p__nwd-calib-norsl__s0",
-            "lambda_tv": 0.0,
-            "use_rsl": False,
-            "use_nwd": True,
-            "nwd_mode": "abs",
-            "nwd_c": 10.24,
-            "size_tau": "NA",
-            "mAP50": 0.6986,
-            "mAP50_95": 0.4357,
-            "diag_key": "e7p__nwd-calib-norsl__s0",
-            "gamma_final": 0.017899,
-        },
-        {
-            "run": "e7p__nwd-sizegate__s0__broken",
-            "lambda_tv": 0.01,
-            "use_rsl": True,
-            "use_nwd": True,
-            "nwd_mode": "sizegate",
-            "nwd_c": 10.24,
-            "size_tau": 5.12,
-            "mAP50": 0.5906,
-            "mAP50_95": 0.3607,
-            "diag_key": "e7p__nwd-sizegate__s0__broken",
-            "gamma_final": -0.006260,
-            "fallback_diag": {
-                "L_mean": 0.8237,
-                "L_std": 0.2200,
-                "pearson": 0.0742,
-                "spearman": 0.0883,
-            },
-        },
-        {
-            "run": "e7p__nwd-sizegate__s0__fixed",
-            "lambda_tv": 0.0001,
-            "use_rsl": True,
-            "use_nwd": True,
-            "nwd_mode": "sizegate",
-            "nwd_c": 10.24,
-            "size_tau": 5.12,
-            "mAP50": 0.6933,
-            "mAP50_95": 0.4311,
-            "diag_key": "e7p__nwd-sizegate__s0",
-            "gamma_final": 0.010483,
-        },
-    ]
+    # Clean up 'run' names if needed to match (e.g. trailing paths), but assume they match in final_metrics
+    # Merge all three on 'run'
+    merged = pd.merge(df_hyp, df_metrics, on="run", how="inner")
+    merged = pd.merge(merged, df_diag, on="run", how="inner")
 
     rows = []
-    for s in specs:
-        dkey = s["diag_key"]
-        d = diag_map.get(dkey, s.get("fallback_diag", {}))
-        l_std = float(d.get("L_std", 0.0)) if d.get("L_std") not in (None, "NA") else 0.0
-        l_mean = float(d.get("L_mean", 0.0)) if d.get("L_mean") not in (None, "NA") else 0.0
-        p_raw = d.get("pearson")
-        s_raw = d.get("spearman")
-
-        # Flag flat field correlations (L_std <= 0.01) with asterisk (*)
-        p_str = f"{float(p_raw):.4f}" if p_raw not in (None, "NA") else "NA"
-        s_str = f"{float(s_raw):.4f}" if s_raw not in (None, "NA") else "NA"
-        if l_std <= 0.01 and p_str != "NA":
+    for _, r in merged.iterrows():
+        run_name = str(r["run"])
+        
+        # Hyperparams
+        lambda_tv = r.get("lambda_tv", "NA")
+        use_rsl = r.get("use_rsl", "NA")
+        use_nwd = r.get("use_nwd", "NA")
+        nwd_mode = r.get("nwd_mode", "NA")
+        nwd_c = r.get("nwd_c", "NA")
+        size_tau = r.get("size_tau", "NA")
+        
+        # Metrics
+        mAP50 = r.get("mAP50", "NA")
+        mAP50_95 = r.get("mAP50_95", "NA")
+        AP_small = r.get("AP_small", "NA")
+        AP_medium = r.get("AP_medium", "NA")
+        AP_large = r.get("AP_large", "NA")
+        
+        # Diag
+        l_mean = r.get("L_mean", "NA")
+        l_std = r.get("L_std", "NA")
+        p_raw = r.get("pearson", "NA")
+        s_raw = r.get("spearman", "NA")
+        gamma_final = r.get("gamma_final", "NA")
+        
+        # Format metrics
+        if not pd.isna(l_mean) and l_mean != "NA": l_mean = round(float(l_mean), 4)
+        if not pd.isna(l_std) and l_std != "NA": l_std = round(float(l_std), 4)
+        
+        p_str = f"{float(p_raw):.4f}" if not pd.isna(p_raw) and p_raw != "NA" else "NA"
+        s_str = f"{float(s_raw):.4f}" if not pd.isna(s_raw) and s_raw != "NA" else "NA"
+        
+        is_flat = False
+        if not pd.isna(l_std) and l_std != "NA" and float(l_std) <= 0.01:
+            is_flat = True
+        elif pd.isna(l_std) or l_std == "NA":
+            is_flat = True
+            
+        if is_flat and p_str != "NA":
             p_str += "*"
             s_str += "*"
 
         rows.append({
-            "run": s["run"],
-            "lambda_tv": s["lambda_tv"],
-            "use_rsl": s["use_rsl"],
-            "use_nwd": s["use_nwd"],
-            "nwd_mode": s["nwd_mode"],
-            "nwd_c": s["nwd_c"],
-            "size_tau": s["size_tau"],
-            "mAP50": s["mAP50"],
-            "mAP50_95": s["mAP50_95"],
-            "L_mean": round(l_mean, 4) if l_mean else "NA",
-            "L_std": round(l_std, 4) if l_std else "NA",
+            "run": run_name,
+            "lambda_tv": lambda_tv,
+            "use_rsl": use_rsl,
+            "use_nwd": use_nwd,
+            "nwd_mode": nwd_mode,
+            "nwd_c": nwd_c,
+            "size_tau": size_tau,
+            "mAP50": mAP50,
+            "mAP50_95": mAP50_95,
+            "AP_small": AP_small,
+            "AP_medium": AP_medium,
+            "AP_large": AP_large,
+            "L_mean": l_mean,
+            "L_std": l_std,
             "pearson": p_str,
             "spearman": s_str,
-            "gamma_final": s["gamma_final"],
+            "gamma_final": gamma_final,
         })
 
     df_out = pd.DataFrame(rows)
@@ -245,32 +102,34 @@ def build_c2_table1():
         os.makedirs(os.path.dirname(p), exist_ok=True)
         df_out.to_csv(p, index=False)
         print(f"[SUCCESS] Wrote unified C2_table1 to {p} ({len(df_out)} rows)")
-    print(df_out.to_string(index=False))
 
 
 def build_c2_branch_scale():
     """Build tables/C2_branch_scale.csv analyzing two-stage collapse dynamics."""
-    t1_p = Path("tables/C2_table1.csv")
     diag_p = Path("tables/C2_final_diag.csv")
+    hyperparams_p = Path("tables/C2_hyperparams.csv")
     
-    if not t1_p.exists():
-        build_c2_table1()
-    if not diag_p.exists():
-        print("[WARN] tables/C2_final_diag.csv not found. Please run final_diag.py first.")
+    if not diag_p.exists() or not hyperparams_p.exists():
+        print("[WARN] C2_final_diag.csv or C2_hyperparams.csv not found.")
         return
         
-    df_t1 = pd.read_csv(t1_p)
     df_diag = pd.read_csv(diag_p)
+    df_hyp = pd.read_csv(hyperparams_p)
     
-    # Extract lambda_tv from table1
-    lam_map = dict(zip(df_t1["run"], df_t1["lambda_tv"]))
+    lam_map = dict(zip(df_hyp["run"], df_hyp["lambda_tv"]))
     
     rows = []
     for _, r in df_diag.iterrows():
-        try:
-            run_name = str(r["run"])
-            lam_tv = lam_map.get(run_name, "NA")
+        run_name = str(r["run"])
+        # Exclude rows where L_std is NA (e.g. baseline)
+        if pd.isna(r.get("L_std")) or r.get("L_std") == "NA":
+            continue
             
+        lam_tv = lam_map.get(run_name, "NA")
+        if lam_tv == "NA":
+            continue
+            
+        try:
             l_mean = float(r["L_mean"])
             l_std = float(r["L_std"])
             gamma = float(r["gamma_final"])
@@ -294,8 +153,6 @@ def build_c2_branch_scale():
         os.makedirs(os.path.dirname(p), exist_ok=True)
         df_bs.to_csv(p, index=False)
         print(f"[SUCCESS] Wrote branch scale table to {p}")
-    print("\n=== Branch Scale Summary ===")
-    print(df_bs.to_string(index=False))
 
 
 def build_c2_gamma_curves():
@@ -319,7 +176,6 @@ def build_c2_gamma_curves():
     for f in files:
         run_name = Path(f).parent.name
         
-        # Exclude baseline runs as they don't have an RFDBlock and any rfd_log.csv is synthetic
         if "baseline" in run_name.lower():
             print(f"[INFO] Skipping rfd_log.csv for {run_name} (baseline models have no RFDBlock)")
             continue
@@ -328,7 +184,6 @@ def build_c2_gamma_curves():
             df = pd.read_csv(f)
             df["run"] = run_name
             
-            # Filter out synthetic filler rows (where L_mean=0.5, L_min=0.0, L_max=0.5)
             if "L_mean" in df.columns:
                 mask = ~((df["L_mean"] == 0.5) & (df["L_min"] == 0.0) & (df["L_max"] == 0.5))
                 df = df[mask]
@@ -367,8 +222,6 @@ def build_c2_metrics_unified():
         os.makedirs(os.path.dirname(p), exist_ok=True)
         out_df.to_csv(p, index=False)
         print(f"[SUCCESS] Wrote unified metrics table to {p}")
-    print("\n=== Unified Metrics Table ===")
-    print(out_df.to_string(index=False))
 
 
 def main():

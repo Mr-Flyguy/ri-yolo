@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from scipy.stats import ttest_ind, mannwhitneyu
 import warnings
+import math
 
 def cohens_d(x, y):
     nx = len(x)
@@ -15,7 +16,7 @@ def cohens_d(x, y):
 def get_stats(x, y):
     if len(x) == 0 or len(y) == 0:
         return {"t": "NA", "df": "NA", "p_welch": "NA", "ci_95": "NA", "U": "NA", "p_mw": "NA", "d": "NA", "min_p": "NA"}
-    if len(x) == 1 and len(y) == 1:
+    if len(x) == 1 or len(y) == 1:
         return {"t": "NA", "df": "NA", "p_welch": "NA", "ci_95": "NA", "U": "NA", "p_mw": "NA", "d": "NA", "min_p": "NA"}
     
     with warnings.catch_warnings():
@@ -33,7 +34,6 @@ def get_stats(x, y):
             # Cohen's d
             d = cohens_d(x, y)
             # min_p for mw
-            import math
             min_p = 2 / math.comb(len(x) + len(y), len(x))
             
             return {
@@ -53,7 +53,7 @@ if __name__ == "__main__":
     df_metrics = pd.read_csv("tables/C2_final_metrics.csv")
     df_diag = pd.read_csv("tables/C2_final_diag.csv")
     
-    merged = pd.merge(df_metrics, df_diag, on="run", how="inner")
+    merged = pd.merge(df_metrics, df_diag, on="run", how="left")
     
     # groups
     base = merged[merged["run"].str.startswith("e2p__baseline")]
@@ -61,10 +61,17 @@ if __name__ == "__main__":
     
     rows = []
     
-    def add_comparison(name, g1, g2, n1, n2):
-        for metric in ["mAP50", "mAP50_95", "L_mean", "L_std"]:
-            x = g1[metric].dropna().astype(float).values
-            y = g2[metric].dropna().astype(float).values
+    def add_comparison(name, g1, g2):
+        for metric in ["mAP50", "mAP50_95", "AP_small", "L_std"]:
+            if metric not in g1.columns or metric not in g2.columns:
+                continue
+                
+            x_raw = g1[metric].dropna()
+            y_raw = g2[metric].dropna()
+            
+            x = pd.to_numeric(x_raw, errors='coerce').dropna().values
+            y = pd.to_numeric(y_raw, errors='coerce').dropna().values
+            
             diff_pp = (np.mean(x) - np.mean(y)) * 100 if len(x) > 0 and len(y) > 0 else "NA"
             
             stats = get_stats(x, y)
@@ -81,18 +88,29 @@ if __name__ == "__main__":
                 **stats
             })
             
-    add_comparison("base_vs_postsppf(lam=0)", base, postsppf, 4, 4)
+    add_comparison("base_vs_postsppf(lam=0)", base, postsppf)
     
     # against e6p__lam-1e-4
     e6p_1e4 = merged[merged["run"].str.startswith("e6p__lam-1e-4")]
-    add_comparison("postsppf_vs_lam-1e-4", postsppf, e6p_1e4, 4, 3)
+    add_comparison("postsppf_vs_lam-1e-4", postsppf, e6p_1e4)
     
     # single lam points
     for lam in ["1e-5", "1e-3", "1e-2", "1e-1"]:
         g2 = merged[merged["run"].str.startswith(f"e6p__lam-{lam}")]
         if len(g2) > 0:
-            add_comparison(f"postsppf_vs_lam-{lam}", postsppf, g2, 4, len(g2))
+            add_comparison(f"postsppf_vs_lam-{lam}", postsppf, g2)
             
+    # nwd-calib-norsl
+    nwd_norsl = merged[merged["run"].str.startswith("e7p__nwd-calib-norsl")]
+    if len(nwd_norsl) > 0:
+        add_comparison("postsppf_vs_nwd-calib-norsl", postsppf, nwd_norsl)
+        
+    # sizegate broken vs fixed
+    broken = merged[merged["run"] == "runs/detect/runs/e7p__nwd-sizegate__s0"]
+    fixed = merged[merged["run"] == "runs_fixed/e7p__nwd-sizegate__s0"]
+    if len(broken) > 0 and len(fixed) > 0:
+        add_comparison("sizegate_broken_vs_fixed", broken, fixed)
+        
     res_df = pd.DataFrame(rows)
     res_df.to_csv("tables/C2_final_stats.csv", index=False)
     print("[SUCCESS] tables/C2_final_stats.csv generated.")
