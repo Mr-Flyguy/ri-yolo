@@ -1,0 +1,54 @@
+================================================================================
+  G.6: CONSISTENCY CHECKER (C2 TABLES)
+================================================================================
+[INFO] Loaded C2_final_diag.csv
+[INFO] Loaded C2_table1.csv
+[INFO] Loaded C2_branch_scale.csv
+[INFO] Loaded C2_metrics_unified.csv
+
+--- CHECK 1: mAP metrics (table1 vs metrics_unified) ---
+[ERROR] e3p__pos-postsppf__s0 mAP50 mismatch: C2_table1=0.6937 != C2_metrics_unified=0.6944
+[ERROR] e3p__pos-postsppf__s0 mAP50_95 mismatch: C2_table1=0.4348 != C2_metrics_unified=0.4352
+[WARN] e6p__lam-1e-5__s0 missing in C2_metrics_unified.csv
+[ERROR] e6p__lam-1e-4__s0 mAP50 mismatch: C2_table1=0.6937 != C2_metrics_unified=0.6935
+[ERROR] e6p__lam-1e-4__s0 mAP50_95 mismatch: C2_table1=0.4349 != C2_metrics_unified=0.4354
+[ERROR] e6p__lam-1e-4__s1 mAP50 mismatch: C2_table1=0.6942 != C2_metrics_unified=0.6939
+[ERROR] e6p__lam-1e-4__s1 mAP50_95 mismatch: C2_table1=0.4322 != C2_metrics_unified=0.4327
+[ERROR] e6p__lam-1e-4__s2 mAP50 mismatch: C2_table1=0.6978 != C2_metrics_unified=0.6989
+[WARN] e6p__lam-1e-3__s0 missing in C2_metrics_unified.csv
+[ERROR] e6p__lam-1e-2__s0 mAP50_95 mismatch: C2_table1=0.4355 != C2_metrics_unified=0.435
+[WARN] e6p__lam-1e-1__s0 missing in C2_metrics_unified.csv
+[ERROR] e7p__nwd-calib__s0 mAP50 mismatch: C2_table1=0.6976 != C2_metrics_unified=0.6961
+[ERROR] e7p__nwd-calib__s0 mAP50_95 mismatch: C2_table1=0.4376 != C2_metrics_unified=0.4368
+[ERROR] e7p__nwd-scaleinv__s0 mAP50 mismatch: C2_table1=0.6935 != C2_metrics_unified=0.6946
+[ERROR] e7p__nwd-scaleinv__s0 mAP50_95 mismatch: C2_table1=0.4367 != C2_metrics_unified=0.4369
+[ERROR] e7p__nwd-calib-norsl__s0 mAP50 mismatch: C2_table1=0.6986 != C2_metrics_unified=0.6981
+[ERROR] e7p__nwd-calib-norsl__s0 mAP50_95 mismatch: C2_table1=0.4357 != C2_metrics_unified=0.4364
+[WARN] e7p__nwd-sizegate__s0__broken missing in C2_metrics_unified.csv
+[WARN] e7p__nwd-sizegate__s0__fixed missing in C2_metrics_unified.csv
+
+--- CHECK 2: L_mean, L_std, gamma_final (table1 vs final_diag) ---
+[WARN] e3p__pos-postsppf__s0 missing in C2_final_diag.csv
+[ERROR] e6p__lam-1e-5__s0 L_mean mismatch: C2_table1=0.8186 != C2_final_diag=0.8178
+[ERROR] e6p__lam-1e-5__s0 L_std mismatch: C2_table1=0.2339 != C2_final_diag=0.2431
+[ERROR] e6p__lam-1e-4__s0 L_mean mismatch: C2_table1=0.9502 != C2_final_diag=0.936
+[ERROR] e6p__lam-1e-4__s0 L_std mismatch: C2_table1=0.0967 != C2_final_diag=0.1067
+[ERROR] e6p__lam-1e-4__s1 L_mean mismatch: C2_table1=0.9364 != C2_final_diag=0.8394
+[ERROR] e6p__lam-1e-4__s1 L_std mismatch: C2_table1=0.1624 != C2_final_diag=0.2566
+[ERROR] e6p__lam-1e-4__s2 L_mean mismatch: C2_table1=0.9736 != C2_final_diag=0.9834
+[ERROR] e6p__lam-1e-4__s2 L_std mismatch: C2_table1=0.083 != C2_final_diag=0.0584
+[ERROR] e6p__lam-1e-3__s0 L_std mismatch: C2_table1=0.0011 != C2_final_diag=0.0016
+[ERROR] e6p__lam-1e-2__s0 L_mean mismatch: C2_table1=0.5001 != C2_final_diag=0.5003
+[ERROR] e6p__lam-1e-2__s0 L_std mismatch: C2_table1=0.0004 != C2_final_diag=0.0006
+[ERROR] e7p__nwd-calib__s0 L_mean mismatch: C2_table1=0.5004 != C2_final_diag=0.5019
+[ERROR] e7p__nwd-calib__s0 L_std mismatch: C2_table1=0.0024 != C2_final_diag=0.0031
+[ERROR] e7p__nwd-scaleinv__s0 L_mean mismatch: C2_table1=0.4995 != C2_final_diag=0.4999
+[ERROR] e7p__nwd-scaleinv__s0 L_std mismatch: C2_table1=0.0022 != C2_final_diag=0.0031
+[ERROR] e7p__nwd-calib-norsl__s0 L_mean mismatch: C2_table1=0.657 != C2_final_diag=0.6616
+[ERROR] e7p__nwd-calib-norsl__s0 L_std mismatch: C2_table1=0.3808 != C2_final_diag=0.3826
+[WARN] e7p__nwd-sizegate__s0__broken missing in C2_final_diag.csv
+[WARN] e7p__nwd-sizegate__s0__fixed missing in C2_final_diag.csv
+
+--- CHECK 3: L_mean, L_std, gamma_final (branch_scale vs final_diag) ---
+
+[FAILED] Found 31 data inconsistencies. Please fix the generation scripts.

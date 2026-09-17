@@ -1,4 +1,8 @@
 run,ckpt_path,ckpt_md5,L_mean,L_std,pearson,spearman,L_sat_frac,mean_one_minus_L,gamma_final
+e2p__baseline__s0,runs/detect/runs/e2p__baseline__s0/weights/best.pt,6b4d63a61e64a1016fe8c99155f152ba,NA,NA,NA,NA,NA,NA,NA
+e2p__baseline__s1,runs/detect/runs/e2p__baseline__s1/weights/best.pt,f9f720a1740f33b6d3a80ef43bdbc95d,NA,NA,NA,NA,NA,NA,NA
+e2p__baseline__s2,runs/detect/runs/e2p__baseline__s2/weights/best.pt,8ffe393f63b8a5568198100986fffd1a,NA,NA,NA,NA,NA,NA,NA
+e2p__baseline__s3,runs/detect/runs/e2p__baseline__s3/weights/best.pt,c58e406f4a49fb5feb502c9f73c2a28a,NA,NA,NA,NA,NA,NA,NA
 e2p__postsppf__s0,runs/detect/runs/e3p__pos-postsppf__s0/weights/best.pt,a5510ad1b6f3ea7f4702d3c63a0df016,0.6184,0.382,-0.0637,-0.0165,0.3416,0.3816,0.003155
 e2p__postsppf__s1,runs/detect/runs/e2p__postsppf__s1/weights/best.pt,6cf304e6e96454f3e76c59b70da5cb52,0.5495,0.3879,0.0846,0.084,0.2355,0.4505,-0.00187
 e2p__postsppf__s2,runs/detect/runs/e2p__postsppf__s2/weights/best.pt,674032c468478b6f934b01aaf0694412,0.4573,0.3726,-0.0302,-0.0628,0.1333,0.5427,0.002531
