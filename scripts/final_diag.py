@@ -109,6 +109,18 @@ RUN_SPECS = [
         "runs/detect/runs/e7p__nwd-sizegate__s0/weights/best.pt",
         "runs/e7p__nwd-sizegate__s0/weights/best.pt",
     ]),
+    ("e3p__pos-p3__s0", ["runs/detect/runs/e3p__pos-p3__s0/weights/best.pt", "runs/e3p__pos-p3__s0/weights/best.pt"]),
+    ("e3p__pos-p4__s0", ["runs/detect/runs/e3p__pos-p4__s0/weights/best.pt", "runs/e3p__pos-p4__s0/weights/best.pt"]),
+    ("e3p__pos-presppf__s0", ["runs/detect/runs/e3p__pos-presppf__s0/weights/best.pt", "runs/e3p__pos-presppf__s0/weights/best.pt"]),
+    ("e3p__capctrl__s0", ["runs/detect/runs/e3p__capctrl__s0/weights/best.pt", "runs/e3p__capctrl__s0/weights/best.pt"]),
+    ("e3p__capctrl__s1", ["runs/detect/runs/e3p__capctrl__s1/weights/best.pt", "runs/e3p__capctrl__s1/weights/best.pt"]),
+    ("e3p__capctrl__s2", ["runs/detect/runs/e3p__capctrl__s2/weights/best.pt", "runs/e3p__capctrl__s2/weights/best.pt"]),
+    ("e5p__baseline-ep40__s0", ["runs/detect/runs/e5p__baseline-ep40__s0/weights/best.pt", "runs/e5p__baseline-ep40__s0/weights/best.pt"]),
+    ("e5p__baseline-ep60__s0", ["runs/detect/runs/e5p__baseline-ep60__s0/weights/best.pt", "runs/e5p__baseline-ep60__s0/weights/best.pt"]),
+    ("e5p__postsppf-ep40__s0", ["runs/detect/runs/e5p__postsppf-ep40__s0/weights/best.pt", "runs/e5p__postsppf-ep40__s0/weights/best.pt"]),
+    ("e5p__postsppf-ep60__s0", ["runs/detect/runs/e5p__postsppf-ep60__s0/weights/best.pt", "runs/e5p__postsppf-ep60__s0/weights/best.pt"]),
+    ("e4p__mosaic-close0__s0", ["runs/detect/runs/e4p__mosaic-close0__s0/weights/best.pt", "runs/e4p__mosaic-close0__s0/weights/best.pt"]),
+    ("e4p__mosaic-close50__s0", ["runs/detect/runs/e4p__mosaic-close50__s0/weights/best.pt", "runs/e4p__mosaic-close50__s0/weights/best.pt"]),
 ]
 
 
@@ -264,9 +276,10 @@ def main():
         model_wrapper = YOLO(str(ckpt_path))
         model = model_wrapper.model.eval().to(device)
 
-        rfd_modules = [m for m in model.modules() if m.__class__.__name__ == "RFDBlock"]
-        if not rfd_modules:
-            print(f"      [INFO] Model has no RFDBlock. Writing NA for illumination map.")
+        rfd_modules = [m for m in model.modules() if m.__class__.__name__ in ("RFDBlock", "RFDBlockNoGate")]
+        if not rfd_modules or rfd_modules[0].__class__.__name__ == "RFDBlockNoGate":
+            print(f"      [INFO] Model has no RFDBlock (or is NoGate). Writing NA for illumination map.")
+            gamma_val = find_gamma_final(run_name, ckpt_path, model)
             row = {
                 "run": run_name,
                 "ckpt_path": str(ckpt_path).replace("\\", "/"),
@@ -277,7 +290,7 @@ def main():
                 "spearman": "NA",
                 "L_sat_frac": "NA",
                 "mean_one_minus_L": "NA",
-                "gamma_final": "NA",
+                "gamma_final": round(float(gamma_val), 6) if gamma_val is not None else "NA",
             }
             rows.append(row)
             continue

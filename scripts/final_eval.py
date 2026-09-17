@@ -104,6 +104,18 @@ RUN_SPECS = [
         "runs/detect/runs/e7p__nwd-sizegate__s0/weights/best.pt",
         "runs/e7p__nwd-sizegate__s0/weights/best.pt",
     ]),
+    ("e3p__pos-p3__s0", ["runs/detect/runs/e3p__pos-p3__s0/weights/best.pt", "runs/e3p__pos-p3__s0/weights/best.pt"]),
+    ("e3p__pos-p4__s0", ["runs/detect/runs/e3p__pos-p4__s0/weights/best.pt", "runs/e3p__pos-p4__s0/weights/best.pt"]),
+    ("e3p__pos-presppf__s0", ["runs/detect/runs/e3p__pos-presppf__s0/weights/best.pt", "runs/e3p__pos-presppf__s0/weights/best.pt"]),
+    ("e3p__capctrl__s0", ["runs/detect/runs/e3p__capctrl__s0/weights/best.pt", "runs/e3p__capctrl__s0/weights/best.pt"]),
+    ("e3p__capctrl__s1", ["runs/detect/runs/e3p__capctrl__s1/weights/best.pt", "runs/e3p__capctrl__s1/weights/best.pt"]),
+    ("e3p__capctrl__s2", ["runs/detect/runs/e3p__capctrl__s2/weights/best.pt", "runs/e3p__capctrl__s2/weights/best.pt"]),
+    ("e5p__baseline-ep40__s0", ["runs/detect/runs/e5p__baseline-ep40__s0/weights/best.pt", "runs/e5p__baseline-ep40__s0/weights/best.pt"]),
+    ("e5p__baseline-ep60__s0", ["runs/detect/runs/e5p__baseline-ep60__s0/weights/best.pt", "runs/e5p__baseline-ep60__s0/weights/best.pt"]),
+    ("e5p__postsppf-ep40__s0", ["runs/detect/runs/e5p__postsppf-ep40__s0/weights/best.pt", "runs/e5p__postsppf-ep40__s0/weights/best.pt"]),
+    ("e5p__postsppf-ep60__s0", ["runs/detect/runs/e5p__postsppf-ep60__s0/weights/best.pt", "runs/e5p__postsppf-ep60__s0/weights/best.pt"]),
+    ("e4p__mosaic-close0__s0", ["runs/detect/runs/e4p__mosaic-close0__s0/weights/best.pt", "runs/e4p__mosaic-close0__s0/weights/best.pt"]),
+    ("e4p__mosaic-close50__s0", ["runs/detect/runs/e4p__mosaic-close50__s0/weights/best.pt", "runs/e4p__mosaic-close50__s0/weights/best.pt"]),
 ]
 
 
