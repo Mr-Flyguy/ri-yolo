@@ -1,0 +1,17 @@
+run,ckpt_path,ckpt_md5,L_mean,L_std,pearson,spearman,L_sat_frac,mean_one_minus_L,gamma_final
+e2p__postsppf__s0,runs/detect/runs/e3p__pos-postsppf__s0/weights/best.pt,a5510ad1b6f3ea7f4702d3c63a0df016,0.6184,0.382,-0.0637,-0.0165,0.3416,0.3816,0.003155
+e2p__postsppf__s1,runs/detect/runs/e2p__postsppf__s1/weights/best.pt,6cf304e6e96454f3e76c59b70da5cb52,0.5495,0.3879,0.0846,0.084,0.2355,0.4505,-0.00187
+e2p__postsppf__s2,runs/detect/runs/e2p__postsppf__s2/weights/best.pt,674032c468478b6f934b01aaf0694412,0.4573,0.3726,-0.0302,-0.0628,0.1333,0.5427,0.002531
+e2p__postsppf__s3,runs/detect/runs/e2p__postsppf__s3/weights/best.pt,8712af949baab0eef8305e962bca4f05,0.8152,0.2762,-0.0564,-0.0475,0.562,0.1848,0.011772
+e6p__lam-1e-5__s0,runs/detect/runs/e6p__lam-1e-5__s0/weights/best.pt,a8fc3ba8d37cc603e7ede72e47999285,0.8178,0.2431,-0.155,-0.1411,0.4834,0.1822,0.016006
+e6p__lam-1e-4__s0,runs/detect/runs/e6p__lam-1e-4__s0/weights/best.pt,ca93e6ec41d58f9e2056a2d90ba2c137,0.936,0.1067,0.0006,0.0744,0.6737,0.064,0.002043
+e6p__lam-1e-4__s1,runs/detect/runs/e6p__lam-1e-4__s1/weights/best.pt,13851f72f1949fc3b38bf5f1a697b221,0.8394,0.2566,-0.1399,-0.119,0.5761,0.1606,0.007996
+e6p__lam-1e-4__s2,runs/detect/runs/e6p__lam-1e-4__s2/weights/best.pt,f42c349b62962da9602b46eefb311890,0.9834,0.0584,0.0117,0.0881,0.9272,0.0166,0.002247
+e6p__lam-1e-3__s0,runs/detect/runs/e6p__lam-1e-3__s0/weights/best.pt,c3400f31e425e946c8adcc39894c73ec,0.5001,0.0016,0.0726,0.0718,0.0,0.4999,0.000282
+e6p__lam-1e-2__s0,runs/detect/runs/e6p__lam-1e-2__s0/weights/best.pt,85a676bfefaebd48ab03865f449b681c,0.5003,0.0006,0.0457,0.0856,0.0,0.4997,0.002626
+e6p__lam-1e-1__s0,runs/detect/runs/e6p__lam-1e-1__s0/weights/best.pt,70cc24a6dab65c6d858b0653ba1239b8,0.5001,0.0001,0.1682,0.1928,0.0,0.4999,0.014175
+e7p__nwd-calib__s0,runs/detect/runs/e7p__nwd-calib__s0/weights/best.pt,15c0c92234f64e3d8648d79e71e2c774,0.5019,0.0031,-0.0002,-0.01,0.0,0.4981,0.011795
+e7p__nwd-scaleinv__s0,runs/detect/runs/e7p__nwd-scaleinv__s0/weights/best.pt,afbc9edda9cf145d205a34b27795347d,0.4999,0.0031,-0.13,-0.1877,0.0,0.5001,0.008553
+e7p__nwd-calib-norsl__s0,runs/detect/runs/e7p__nwd-calib-norsl__s0/weights/best.pt,e20dc2b3680a5aed9e25965f226b67dc,0.6616,0.3826,-0.0163,0.0042,0.4257,0.3384,0.017899
+runs_fixed/e7p__nwd-sizegate__s0,runs/detect/runs_fixed/e7p__nwd-sizegate__s0/weights/best.pt,bd1d7c205b8ccc34c458f2c71471bfaf,0.7755,0.3009,-0.1476,-0.1955,0.4812,0.2245,-0.00626
+runs/detect/runs/e7p__nwd-sizegate__s0,runs/detect/runs/e7p__nwd-sizegate__s0/weights/best.pt,cdb350047dcd37b62f4314afa62f601d,0.8896,0.1921,0.0547,0.0924,0.619,0.1104,0.010483

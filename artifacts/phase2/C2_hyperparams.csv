@@ -1,0 +1,17 @@
+run,args_yaml_path,epochs,batch,imgsz,seed,close_mosaic,use_rsl,lambda_tv,use_nwd,nwd_alpha,nwd_mode,nwd_c,size_tau
+e2p__postsppf__s0,runs/detect/runs/e3p__pos-postsppf__s0/args.yaml,100,16,640,0,10,False,0.001,False,0.2,abs,10.24,5.12
+e2p__postsppf__s1,runs/detect/runs/e2p__postsppf__s1/args.yaml,100,16,640,1,10,False,0.001,False,0.2,abs,10.24,5.12
+e2p__postsppf__s2,runs/detect/runs/e2p__postsppf__s2/args.yaml,100,16,640,2,10,False,0.001,False,0.2,abs,10.24,5.12
+e2p__postsppf__s3,runs/detect/runs/e2p__postsppf__s3/args.yaml,100,16,640,3,10,False,0.001,False,0.2,abs,10.24,5.12
+e6p__lam-1e-5__s0,runs/detect/runs/e6p__lam-1e-5__s0/args.yaml,100,16,640,0,10,True,1e-05,False,0.2,abs,10.24,5.12
+e6p__lam-1e-4__s0,runs/detect/runs/e6p__lam-1e-4__s0/args.yaml,100,16,640,0,10,True,0.0001,False,0.2,abs,10.24,5.12
+e6p__lam-1e-4__s1,runs/detect/runs/e6p__lam-1e-4__s1/args.yaml,100,16,640,1,10,True,0.0001,False,0.2,abs,10.24,5.12
+e6p__lam-1e-4__s2,runs/detect/runs/e6p__lam-1e-4__s2/args.yaml,100,16,640,2,10,True,0.0001,False,0.2,abs,10.24,5.12
+e6p__lam-1e-3__s0,runs/detect/runs/e6p__lam-1e-3__s0/args.yaml,100,16,640,0,10,True,0.001,False,0.2,abs,10.24,5.12
+e6p__lam-1e-2__s0,runs/detect/runs/e6p__lam-1e-2__s0/args.yaml,100,16,640,0,10,True,0.01,False,0.2,abs,10.24,5.12
+e6p__lam-1e-1__s0,runs/detect/runs/e6p__lam-1e-1__s0/args.yaml,100,16,640,0,10,True,0.1,False,0.2,abs,10.24,5.12
+e7p__nwd-calib__s0,runs/detect/runs/e7p__nwd-calib__s0/args.yaml,100,16,640,0,10,True,0.01,True,0.2,abs,10.24,5.12
+e7p__nwd-scaleinv__s0,runs/detect/runs/e7p__nwd-scaleinv__s0/args.yaml,100,16,640,0,10,True,0.01,True,0.2,scaleinv,0.3,5.12
+e7p__nwd-calib-norsl__s0,runs/detect/runs/e7p__nwd-calib-norsl__s0/args.yaml,100,16,640,0,10,False,0.0,True,0.2,abs,10.24,5.12
+runs_fixed/e7p__nwd-sizegate__s0,runs/detect/runs_fixed/e7p__nwd-sizegate__s0/args.yaml,100,16,640,0,10,True,0.0001,True,0.2,sizegate,10.24,5.12
+runs/detect/runs/e7p__nwd-sizegate__s0,runs/detect/runs/e7p__nwd-sizegate__s0/args.yaml,100,16,640,0,10,True,0.01,True,0.2,sizegate,10.24,5.12
