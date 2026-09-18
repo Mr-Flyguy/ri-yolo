@@ -39,36 +39,36 @@ All tables are fully consistent.
 ================================================================================
   EXDARK OBJECT SIZE BREAKDOWN: Split 'val' (imgsz=640)
 ================================================================================
-Total objects parsed: 11408
+Total objects parsed: 5704
 --- 1. STANDARD COCO DEFINITION (by Area: px^2) ---
-  Small  :   526 (4.61%)
-  Medium :  3910 (34.27%)
-  Large  :  6972 (61.12%)
+  Small  :   263 (4.61%)
+  Medium :  1955 (34.27%)
+  Large  :  3486 (61.12%)
 
 ================================================================================
   EXDARK OBJECT SIZE BREAKDOWN: Split 'train' (imgsz=640)
 ================================================================================
-Total objects parsed: 19462
+Total objects parsed: 9731
 --- 1. STANDARD COCO DEFINITION (by Area: px^2) ---
-  Small  :   598 (3.07%)
-  Medium :  6752 (34.69%)
-  Large  : 12112 (62.23%)
+  Small  :   299 (3.07%)
+  Medium :  3376 (34.69%)
+  Large  :  6056 (62.23%)
 
 ================================================================================
   EXDARK OBJECT SIZE BREAKDOWN: Split 'test' (imgsz=640)
 ================================================================================
-Total objects parsed: 16550
+Total objects parsed: 8275
 --- 1. STANDARD COCO DEFINITION (by Area: px^2) ---
-  Small  :   492 (2.97%)
-  Medium :  5806 (35.08%)
-  Large  : 10252 (61.95%)
+  Small  :   246 (2.97%)
+  Medium :  2903 (35.08%)
+  Large  :  5126 (61.95%)
 
 ================================================================================
   EXDARK OBJECT SIZE BREAKDOWN: Combined (Train + Val + Test) (imgsz=640)
 ================================================================================
-Total objects parsed: 47420
+Total objects parsed: 23710
 --- 1. STANDARD COCO DEFINITION (by Area: px^2) ---
-  Small  :  1616 (3.41%)
-  Medium : 16468 (34.73%)
-  Large  : 29336 (61.86%)
+  Small  :   808 (3.41%)
+  Medium :  8234 (34.73%)
+  Large  : 14668 (61.86%)
 ```
