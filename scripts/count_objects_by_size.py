@@ -50,7 +50,7 @@ def find_label_dirs(data_yaml: str):
 
 
 def parse_labels_from_dir(lbl_dir: Path, imgsz: int = 640):
-    files = sorted(list(lbl_dir.glob("*.txt")) + list(lbl_dir.glob("**/*.txt")))
+    files = sorted(list(set(lbl_dir.rglob("*.txt"))))
     boxes = []  # list of (w_px, h_px, area)
 
     for f in files:

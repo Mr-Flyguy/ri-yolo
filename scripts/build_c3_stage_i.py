@@ -244,7 +244,7 @@ def build_c3_regime():
     for run, (fam, ep) in ep_map.items():
         m = m_df[m_df["run"] == run]
         if len(m) > 0:
-            clean_pct = ((ep - 10) / ep) * 100
+            clean_pct = (10 / ep) * 100
             row = {
                 "panel": "epochs", "family": fam, "run": run, "epochs": ep, "close_mosaic": "NA",
                 "clean_epochs_pct": clean_pct, "mAP50": m.iloc[0]["mAP50"], "mAP50_95": m.iloc[0]["mAP50_95"]
