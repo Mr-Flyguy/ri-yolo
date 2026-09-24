@@ -9,12 +9,15 @@ import argparse
 import csv
 import glob
 import os
+
 import torch
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Extract gamma gate parameters from model checkpoints.")
-    parser.add_argument("--ckpt", nargs="+", required=True, help="Checkpoint paths or glob patterns (e.g. runs/*/weights/best.pt)")
+    parser.add_argument(
+        "--ckpt", nargs="+", required=True, help="Checkpoint paths or glob patterns (e.g. runs/*/weights/best.pt)"
+    )
     parser.add_argument("--out", default="artifacts/phase0/gamma_existing.csv", help="Output CSV path")
     return parser.parse_args()
 
@@ -45,9 +48,9 @@ def main():
         print(f"[ERROR] No checkpoint files matched pattern: {args.ckpt}")
         fallback = glob.glob("runs/**/*.pt", recursive=True) + glob.glob("weights/**/*.pt", recursive=True)
         if fallback:
-            print(f"[INFO] Found these .pt checkpoints in workspace:\n  " + "\n  ".join(sorted(set(fallback))))
+            print("[INFO] Found these .pt checkpoints in workspace:\n  " + "\n  ".join(sorted(set(fallback))))
             print("[INFO] Try specifying one directly, e.g.:")
-            print(f"  python scripts/dump_gamma.py --ckpt {sorted(set(fallback))[0]}")
+            print(f"  python scripts/dump_gamma.py --ckpt {min(set(fallback))}")
         else:
             print("[INFO] No .pt checkpoint files found anywhere under 'runs/' or 'weights/'.")
         return

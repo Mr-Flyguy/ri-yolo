@@ -12,6 +12,7 @@ import argparse
 import csv
 import sys
 from pathlib import Path
+
 import numpy as np
 import pandas as pd
 
@@ -77,7 +78,7 @@ def load_csv_rows(path_str):
     p = Path(path_str)
     if not p.exists():
         return []
-    with open(p, "r", newline="", encoding="utf-8") as f:
+    with open(p, newline="", encoding="utf-8") as f:
         return list(csv.DictReader(f))
 
 
@@ -331,7 +332,7 @@ def build_regime_and_plot(p1_rows, p3_rows, out_csv, out_fig):
     try:
         import matplotlib.pyplot as plt
 
-        fig, ax = plt.subplots(1, 2, figsize=(11, 4.2), dpi=300)
+        _fig, ax = plt.subplots(1, 2, figsize=(11, 4.2), dpi=300)
 
         # Panel A: Epochs
         ep_df = pd.DataFrame(ep_rows)

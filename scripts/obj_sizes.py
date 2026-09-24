@@ -10,6 +10,7 @@ import argparse
 import csv
 import glob
 import os
+
 import numpy as np
 
 
@@ -74,12 +75,12 @@ def main():
     print(f"Median dimension       : {median_sz:.2f} px")
     print(f"Percentiles [10/50/90] : [{p10:.1f} / {p50:.1f} / {p90:.1f}] px")
     print("-" * 60)
-    print(f"Scale Categories (COCO definition):")
+    print("Scale Categories (COCO definition):")
     print(f"  Small  (< 32 px)     : {pct_small:.1f}%")
     print(f"  Medium (32 - 96 px)  : {pct_medium:.1f}%")
     print(f"  Large  (>= 96 px)    : {pct_large:.1f}%")
     print("-" * 60)
-    print(f"Feature-stride normalized mean box scale:")
+    print("Feature-stride normalized mean box scale:")
     print(f"  P3 (stride  8) : {c_p3:.2f} grid units (C_P3 = {c_p3:.2f})")
     print(f"  P4 (stride 16) : {c_p4:.2f} grid units (C_P4 = {c_p4:.2f})")
     print(f"  P5 (stride 32) : {c_p5:.2f} grid units (C_P5 = {c_p5:.2f})")
