@@ -47,7 +47,7 @@ def main():
         print(f"[WARN] {summary_file} does not exist yet. Run Phase 2 experiments first.")
         return
 
-    with open(summary_file, "r") as f:
+    with open(summary_file) as f:
         rows = list(csv.DictReader(f))
 
     print(f"[INFO] Loaded {len(rows)} record(s) from {summary_file}.")

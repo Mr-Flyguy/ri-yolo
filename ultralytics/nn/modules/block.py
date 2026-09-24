@@ -2114,6 +2114,7 @@ class RFDBlock(nn.Module):
 
     def __deepcopy__(self, memo):
         import copy
+
         cls = self.__class__
         result = cls.__new__(cls)
         memo[id(self)] = result
@@ -2138,7 +2139,3 @@ class RFDBlockNoGate(nn.Module):
     def forward(self, x):
         feat = self.cv1(x)
         return x + self.gamma * self.structure_conv(feat * 0.5)
-
-
-
-

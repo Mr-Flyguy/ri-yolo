@@ -400,13 +400,25 @@ class v8DetectionLoss:
             topk2=tal_topk2,
         )
         self.model = model
-        self.use_rsl = self.hyp.get("use_rsl", False) if isinstance(self.hyp, dict) else getattr(self.hyp, "use_rsl", False)
-        self.lambda_tv = self.hyp.get("lambda_tv", 0.001) if isinstance(self.hyp, dict) else getattr(self.hyp, "lambda_tv", 0.001)
-        self.use_nwd = self.hyp.get("use_nwd", False) if isinstance(self.hyp, dict) else getattr(self.hyp, "use_nwd", False)
-        self.nwd_alpha = self.hyp.get("nwd_alpha", 0.2) if isinstance(self.hyp, dict) else getattr(self.hyp, "nwd_alpha", 0.2)
+        self.use_rsl = (
+            self.hyp.get("use_rsl", False) if isinstance(self.hyp, dict) else getattr(self.hyp, "use_rsl", False)
+        )
+        self.lambda_tv = (
+            self.hyp.get("lambda_tv", 0.001) if isinstance(self.hyp, dict) else getattr(self.hyp, "lambda_tv", 0.001)
+        )
+        self.use_nwd = (
+            self.hyp.get("use_nwd", False) if isinstance(self.hyp, dict) else getattr(self.hyp, "use_nwd", False)
+        )
+        self.nwd_alpha = (
+            self.hyp.get("nwd_alpha", 0.2) if isinstance(self.hyp, dict) else getattr(self.hyp, "nwd_alpha", 0.2)
+        )
         self.nwd_c = self.hyp.get("nwd_c", 12.8) if isinstance(self.hyp, dict) else getattr(self.hyp, "nwd_c", 12.8)
-        self.nwd_mode = self.hyp.get("nwd_mode", "abs") if isinstance(self.hyp, dict) else getattr(self.hyp, "nwd_mode", "abs")
-        self.size_tau = self.hyp.get("size_tau", 8.0) if isinstance(self.hyp, dict) else getattr(self.hyp, "size_tau", 8.0)
+        self.nwd_mode = (
+            self.hyp.get("nwd_mode", "abs") if isinstance(self.hyp, dict) else getattr(self.hyp, "nwd_mode", "abs")
+        )
+        self.size_tau = (
+            self.hyp.get("size_tau", 8.0) if isinstance(self.hyp, dict) else getattr(self.hyp, "size_tau", 8.0)
+        )
         self.bbox_loss = BboxLoss(
             m.reg_max,
             use_nwd=self.use_nwd,
@@ -487,8 +499,12 @@ class v8DetectionLoss:
 
         # Bbox loss
         if fg_mask.sum():
-            hyp_use_nwd = self.hyp.get("use_nwd", False) if isinstance(self.hyp, dict) else getattr(self.hyp, "use_nwd", False)
-            hyp_nwd_alpha = self.hyp.get("nwd_alpha", 0.5) if isinstance(self.hyp, dict) else getattr(self.hyp, "nwd_alpha", 0.5)
+            hyp_use_nwd = (
+                self.hyp.get("use_nwd", False) if isinstance(self.hyp, dict) else getattr(self.hyp, "use_nwd", False)
+            )
+            hyp_nwd_alpha = (
+                self.hyp.get("nwd_alpha", 0.5) if isinstance(self.hyp, dict) else getattr(self.hyp, "nwd_alpha", 0.5)
+            )
             self.bbox_loss.use_nwd = getattr(self, "use_nwd", False) or hyp_use_nwd
             self.bbox_loss.nwd_alpha = getattr(self, "nwd_alpha", 0.5) if hasattr(self, "nwd_alpha") else hyp_nwd_alpha
             loss[0], loss[2] = self.bbox_loss(
@@ -551,12 +567,18 @@ class v8DetectionLoss:
         """Calculate the sum of the loss for box, cls and dfl multiplied by batch size."""
         feats = self.parse_output(preds)
         loss, loss_items = self.loss(feats, batch)
-        hyp_use_rsl = self.hyp.get("use_rsl", False) if isinstance(self.hyp, dict) else getattr(self.hyp, "use_rsl", False)
+        hyp_use_rsl = (
+            self.hyp.get("use_rsl", False) if isinstance(self.hyp, dict) else getattr(self.hyp, "use_rsl", False)
+        )
         use_rsl = getattr(self, "use_rsl", False) or hyp_use_rsl
         if use_rsl:
             lambda_tv = getattr(self, "lambda_tv", None)
             if lambda_tv is None:
-                lambda_tv = self.hyp.get("lambda_tv", 0.001) if isinstance(self.hyp, dict) else getattr(self.hyp, "lambda_tv", 0.001)
+                lambda_tv = (
+                    self.hyp.get("lambda_tv", 0.001)
+                    if isinstance(self.hyp, dict)
+                    else getattr(self.hyp, "lambda_tv", 0.001)
+                )
             tv_loss = self.get_tv_loss()
             batch_size = feats["boxes"].shape[0]
             loss = torch.cat([loss, (lambda_tv * tv_loss * batch_size).unsqueeze(0)])
