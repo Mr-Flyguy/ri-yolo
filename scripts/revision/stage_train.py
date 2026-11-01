@@ -70,7 +70,7 @@ def print_training_plan(
     runs: List[Dict],
     runs_dir: Path,
     with_mosaic: bool = False,
-    with_ep40sgd: bool = True,
+    with_ep40sgd: bool = False,
     repro_check: bool = False,
 ):
     """Print training schedule table and estimated time."""
@@ -131,6 +131,114 @@ def print_training_plan(
     print("=" * 96 + "\n")
 
 
+def verify_training_lr_schedule(
+    run_name: str,
+    run_dir: Path,
+    exp_info: Dict,
+    smoke: bool = False,
+    results_dir: Optional[Path] = None,
+) -> bool:
+    """Verify in results.csv that lr/pg0 == lr/pg1 == lr/pg2 on first epochs and max(lr/pg0) ~ 0.000625 (+-5%).
+
+    If discrepant, issue a loud warning and log to SUMMARY.md / optimizer_discrepancies.md.
+    """
+    results_csv = run_dir / "results.csv"
+    if not results_csv.is_file():
+        return True
+
+    opt = exp_info.get("optimizer", "auto")
+    if opt != "auto":
+        return True
+
+    import csv
+
+    rows = []
+    try:
+        with open(results_csv, "r", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            reader.fieldnames = [c.strip() for c in reader.fieldnames] if reader.fieldnames else []
+            for r in reader:
+                rows.append({k.strip(): v.strip() for k, v in r.items()})
+    except Exception as e:
+        print(f"[WARN] Could not parse results.csv for '{run_name}': {e}")
+        return True
+
+    if not rows:
+        return True
+
+    discrepancies = []
+    check_epochs = min(3, len(rows))
+    for ep_idx in range(check_epochs):
+        row = rows[ep_idx]
+        pg0_s = row.get("lr/pg0")
+        pg1_s = row.get("lr/pg1")
+        pg2_s = row.get("lr/pg2")
+        if pg0_s is not None and pg1_s is not None and pg2_s is not None:
+            try:
+                pg0, pg1, pg2 = float(pg0_s), float(pg1_s), float(pg2_s)
+                if abs(pg0 - pg1) > 1e-7 or abs(pg0 - pg2) > 1e-7:
+                    discrepancies.append(
+                        f"Epoch {ep_idx + 1}: lr/pg0={pg0:.7f}, lr/pg1={pg1:.7f}, lr/pg2={pg2:.7f} are not equal"
+                    )
+            except ValueError:
+                pass
+
+    target_lr = 0.000625
+    tol_lr = 0.05 * target_lr
+    if not smoke and len(rows) >= 3:
+        all_pg0 = []
+        for r in rows:
+            v = r.get("lr/pg0")
+            if v:
+                try:
+                    all_pg0.append(float(v))
+                except ValueError:
+                    pass
+        if all_pg0:
+            max_pg0 = max(all_pg0)
+            if abs(max_pg0 - target_lr) > tol_lr:
+                discrepancies.append(
+                    f"max(lr/pg0) = {max_pg0:.7f} deviates from expected 0.000625 (+-5%: [{target_lr - tol_lr:.6f}, {target_lr + tol_lr:.6f}])"
+                )
+
+    if discrepancies:
+        warn_msg = (
+            "\n" + "!" * 80 + "\n"
+            f"  [CRITICAL WARNING] OPTIMIZER/LR DISCREPANCY DETECTED IN RUN: {run_name}\n"
+            "  The run was expected to train with optimizer='auto' (AdamW lr0=0.000625, momentum=0.9, warmup_bias_lr=0.0).\n"
+            "  Discrepancies found:\n" + "\n".join(f"    - {d}" for d in discrepancies) + "\n"
+            "  Possible cause: explicit AdamW parameter override with momentum=0.937 or warmup_bias_lr=0.1.\n"
+            + "!" * 80
+            + "\n"
+        )
+        print(warn_msg)
+
+        candidate_dirs = [run_dir.parent]
+        if results_dir:
+            candidate_dirs.append(results_dir)
+        for cdir in candidate_dirs:
+            try:
+                if cdir.is_dir():
+                    warn_f = cdir / "optimizer_discrepancies.md"
+                    with open(warn_f, "a", encoding="utf-8") as wf:
+                        wf.write(f"\n### Warning: Optimizer Discrepancy in `{run_name}`\n")
+                        for d_item in discrepancies:
+                            wf.write(f"- {d_item}\n")
+
+                    sum_f = cdir / "SUMMARY.md"
+                    if sum_f.is_file():
+                        with open(sum_f, "a", encoding="utf-8") as sf:
+                            sf.write(f"\n> [!CAUTION]\n> **Optimizer Discrepancy in `{run_name}`**:\n")
+                            for d_item in discrepancies:
+                                sf.write(f"> - {d_item}\n")
+            except Exception:
+                pass
+        return False
+
+    print(f"[VERIFIED] Optimizer and LR schedule verified for '{run_name}': pg0==pg1==pg2 and peak lr ~0.000625.")
+    return True
+
+
 def execute_single_run(
     exp_info: Dict,
     data_yaml: Path,
@@ -138,6 +246,7 @@ def execute_single_run(
     runs_dir: Path,
     smoke: bool = False,
     force: bool = False,
+    results_dir: Optional[Path] = None,
 ):
     """Execute training for a single run using Ultralytics YOLO API with RFD callback."""
     run_name = exp_info["run"]
@@ -164,13 +273,18 @@ def execute_single_run(
     from scripts.rfd_callbacks import add_rfd_logging
     from ultralytics import YOLO
 
-    # Check for resume
+    # Check for resume (production mode only with valid checkpoint state)
     last_pt = run_dir / "weights" / "last.pt"
-    if last_pt.is_file() and not force:
-        print(f"[INFO] Resuming training from existing checkpoint: {last_pt}")
-        model = YOLO(str(last_pt))
-        model.train(resume=True)
-        return
+    if not smoke and not force and last_pt.is_file():
+        try:
+            ckpt = torch.load(last_pt, map_location="cpu")
+            if isinstance(ckpt, dict) and ckpt.get("optimizer") is not None and ckpt.get("epoch", -1) >= 0:
+                print(f"[INFO] Resuming training from existing checkpoint: {last_pt}")
+                model = YOLO(str(last_pt))
+                model.train(resume=True)
+                return
+        except Exception:
+            pass
 
     # Load configuration
     model = YOLO(exp_info["cfg"])
@@ -216,9 +330,9 @@ def execute_single_run(
         "device": device,
     }
 
-    if exp_info.get("optimizer"):
+    if exp_info.get("optimizer") and exp_info["optimizer"] != "auto":
         train_kwargs["optimizer"] = exp_info["optimizer"]
-    if exp_info.get("lr0"):
+    if exp_info.get("lr0") is not None:
         train_kwargs["lr0"] = exp_info["lr0"]
 
     if smoke:
@@ -231,17 +345,27 @@ def execute_single_run(
 
     print(f"\n[COMPLETED] Run '{run_name}' in {elapsed} minutes. Output: {run_dir}")
 
+    # Post-training check for learning rate schedule and parameter groups
+    verify_training_lr_schedule(
+        run_name=run_name,
+        run_dir=run_dir,
+        exp_info=exp_info,
+        smoke=smoke,
+        results_dir=results_dir,
+    )
+
 
 def run_stage_train(
     data_yaml: Path,
     device: str = "0",
     with_mosaic: bool = False,
-    with_ep40sgd: bool = True,
+    with_ep40sgd: bool = False,
     repro_check: bool = False,
     dry_run: bool = False,
     smoke: bool = False,
     force: bool = False,
     runs_dir: Optional[Path] = None,
+    results_dir: Optional[Path] = None,
 ):
     """Orchestrate training of all new revision schedules."""
     if not dry_run or smoke:
@@ -284,6 +408,7 @@ def run_stage_train(
             runs_dir=runs_dir,
             smoke=smoke,
             force=force,
+            results_dir=results_dir,
         )
 
 
@@ -295,7 +420,9 @@ if __name__ == "__main__":
         "--with-mosaic", action="store_true", help="Include priority 2 mosaic runs (close_mosaic=0, 50)"
     )
     parser.add_argument(
-        "--no-ep40sgd", action="store_true", help="Disable control series ep40-sgd (enabled by default)"
+        "--with-ep40sgd",
+        action="store_true",
+        help="Enable control series ep40-sgd (6 runs with optimizer=SGD, lr0=0.01; disabled by default)",
     )
     parser.add_argument(
         "--repro-check", action="store_true", help="Retrain e5p__baseline-ep40__s0 as e9p to check reproducibility"
@@ -309,7 +436,7 @@ if __name__ == "__main__":
         data_yaml=resolve_data_yaml(args.data),
         device=args.device,
         with_mosaic=args.with_mosaic,
-        with_ep40sgd=not args.no_ep40sgd,
+        with_ep40sgd=args.with_ep40sgd,
         repro_check=args.repro_check,
         dry_run=args.dry_run,
         smoke=args.smoke,

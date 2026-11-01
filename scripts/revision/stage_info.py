@@ -157,11 +157,14 @@ def collect_hyperparameters(out_dir: Path) -> List[Dict]:
                 args_file = c
                 break
 
-        # Fallback recursive search
+        # Fallback search within run and artifact directories (skip .git)
         if not args_file:
-            matches = list(REPO_ROOT.glob(f"**/{clean_name}/args.yaml"))
-            if matches:
-                args_file = matches[0]
+            for sdir in [REPO_ROOT / "runs", REPO_ROOT / "runs_fixed", REPO_ROOT / "artifacts", out_dir / "runs"]:
+                if sdir.is_dir():
+                    matches = list(sdir.glob(f"**/{clean_name}/args.yaml"))
+                    if matches:
+                        args_file = matches[0]
+                        break
 
         args_data = {}
         if args_file and args_file.is_file():
@@ -458,15 +461,18 @@ def run_stage_info(results_dir: Path, data_yaml: Path, dry_run: bool = False) ->
         f"(S: {split_stats['test']['small_pct']}%, M: {split_stats['test']['medium_pct']}%, L: {split_stats['test']['large_pct']}%)"
     )
 
-    # 5. Dedicated Split Audit (Official vs Dataset Loaded and Rejection Reasons)
+    # 5. Dedicated Split Audit (Images, Backgrounds, Objects)
     split_audit_rows = build_split_audit(data_yaml, info_dir)
-    print(f"[PASSPORT] ExDark split rejection audit saved to: {info_dir / 'split_audit.csv'}")
+    print(f"[PASSPORT] ExDark split composition and backgrounds audit saved to: {info_dir / 'split_audit.csv'}")
 
     # 6. Dedicated Optimizer Audit (Historical Evidence and Deduction)
     opt_audit_rows = build_optimizer_audit(info_dir)
     print(f"[PASSPORT] Optimizer audit saved to: {info_dir / 'optimizer_audit.csv'}")
 
-    # 7. Methodology
+    # 7. Validation mAP50 Curves & Best Checkpoint Epochs (R1.2, R1.4)
+    val_curves_summary, _ = extract_val_map50_curves(results_dir, info_dir)
+
+    # 8. Methodology
     meth = generate_methodology_paragraph()
     with open(info_dir / "methodology_ru.md", "w", encoding="utf-8") as f:
         f.write(meth["ru"] + "\n")
@@ -483,12 +489,17 @@ def run_stage_info(results_dir: Path, data_yaml: Path, dry_run: bool = False) ->
         "split_stats": split_stats,
         "split_audit": split_audit_rows,
         "optimizer_audit": opt_audit_rows,
+        "val_curves_summary": val_curves_summary,
         "methodology": meth,
     }
 
 
 def build_optimizer_audit(out_dir: Path) -> List[Dict]:
-    """Audit and document exact optimizer and learning rate behavior for existing runs (R1.2)."""
+    """Audit and document exact optimizer and learning rate behavior for existing runs (R1.2).
+
+    Documents momentum, warmup_bias_lr, and whether conclusions are verified by factual lr curves
+    or deduced from Ultralytics trainer.py code and args.yaml.
+    """
     target_runs = [
         ("e2p__baseline__s0", 100),
         ("e2p__baseline__s1", 100),
@@ -530,10 +541,6 @@ def build_optimizer_audit(out_dir: Path) -> List[Dict]:
         "e2p__postsppf__s0": "2_yolov8s_rfd",
     }
 
-    # Ultralytics build_optimizer logic:
-    # iterations = math.ceil(len(dataset) / max(batch, nbs)) * epochs
-    # For ExDark: len=2950, batch=16, nbs=64 -> max(16, 64) = 64 -> math.ceil(2950/64) = 47 iters/epoch
-    # total_iters: 40 ep -> 1880; 60 ep -> 2820; 100 ep -> 4700 (all <= 10000 -> AdamW, lr0=0.000625)
     audit_rows = []
     for run_name, epochs in target_runs:
         clean_name = run_name.split("/")[-1]
@@ -544,11 +551,13 @@ def build_optimizer_audit(out_dir: Path) -> List[Dict]:
         first_lr = "NA"
         last_lr = "NA"
         factual_source = None
+        evidence_type = "code_and_args_yaml"
 
         if factual_curve:
             first_lr = f"{float(factual_curve[0]['lr/pg0']):.6f}"
             last_lr = f"{float(factual_curve[-1]['lr/pg0']):.2e}"
             factual_source = f"artifacts/phase0/curves_comparison.csv (run={curve_key})"
+            evidence_type = "factual_lr_curves"
 
         # 2. Check for local results.csv
         if not factual_source:
@@ -563,9 +572,12 @@ def build_optimizer_audit(out_dir: Path) -> List[Dict]:
                     results_csv = cand
                     break
             if not results_csv:
-                matches = list(REPO_ROOT.glob(f"**/{clean_name}/results.csv"))
-                if matches:
-                    results_csv = matches[0]
+                for sdir in [REPO_ROOT / "runs", REPO_ROOT / "runs_fixed", REPO_ROOT / "artifacts", out_dir / "runs"]:
+                    if sdir.is_dir():
+                        matches = list(sdir.glob(f"**/{clean_name}/results.csv"))
+                        if matches:
+                            results_csv = matches[0]
+                            break
 
             if results_csv and results_csv.is_file():
                 try:
@@ -578,14 +590,15 @@ def build_optimizer_audit(out_dir: Path) -> List[Dict]:
                                 first_lr = f"{float(rdr[1][cidx].strip()):.6f}"
                                 last_lr = f"{float(rdr[-1][cidx].strip()):.2e}"
                                 factual_source = str(results_csv.relative_to(REPO_ROOT))
+                                evidence_type = "factual_lr_curves"
                 except Exception:
                     pass
 
-        # Calculate iterations according to Ultralytics trainer.py
-        # ceil(2950 / max(16, 64)) = 47
         total_iters = 47 * epochs
         deduced_opt = "AdamW"
         lr0 = 0.000625
+        momentum = 0.9
+        warmup_bias_lr = 0.0
 
         if factual_source:
             source_expl = (
@@ -594,7 +607,10 @@ def build_optimizer_audit(out_dir: Path) -> List[Dict]:
         else:
             first_lr = "~0.000207"
             last_lr = "~1.24e-05"
-            source_expl = f"args.yaml: optimizer=auto; iterations=ceil(2950/max(16,64))*{epochs}={total_iters} <= 10000 -> AdamW (lr0=0.000625)"
+            source_expl = (
+                f"args.yaml: optimizer=auto; iterations=ceil(2950/max(16,64))*{epochs}={total_iters} <= 10000 "
+                "-> trainer.py line 1145 sets AdamW, lr0=0.000625, momentum=0.9, warmup_bias_lr=0.0"
+            )
 
         audit_rows.append(
             {
@@ -603,8 +619,11 @@ def build_optimizer_audit(out_dir: Path) -> List[Dict]:
                 "total_iters": total_iters,
                 "optimizer": deduced_opt,
                 "lr0": lr0,
+                "momentum": momentum,
+                "warmup_bias_lr": warmup_bias_lr,
                 "first_lr_pg0": first_lr,
                 "last_lr_pg0": last_lr,
+                "evidence_type": evidence_type,
                 "source": source_expl,
             }
         )
@@ -619,8 +638,11 @@ def build_optimizer_audit(out_dir: Path) -> List[Dict]:
                 "total_iters",
                 "optimizer",
                 "lr0",
+                "momentum",
+                "warmup_bias_lr",
                 "first_lr_pg0",
                 "last_lr_pg0",
+                "evidence_type",
                 "source",
             ],
         )
@@ -631,11 +653,34 @@ def build_optimizer_audit(out_dir: Path) -> List[Dict]:
 
 
 def build_split_audit(data_yaml_path: Path, out_dir: Path) -> List[Dict]:
-    """Audit ExDark split composition, loaded images, and rejection details (R1.4)."""
+    """Audit ExDark split composition, loaded images, and background image details (R1.4).
+
+    Ultralytics DetectionDataset does NOT reject images without bounding boxes; it treats them
+    as background images (labels.py / dataset.py: 'nf images, nm + ne backgrounds, nc corrupt')
+    and includes them in self.im_files for training and validation.
+    """
     official_counts = {
-        "train": {"official_images": 3000, "expected_loaded": 2950, "expected_objects": 9731, "rejected": 50},
-        "val": {"official_images": 1800, "expected_loaded": 1765, "expected_objects": 5704, "rejected": 35},
-        "test": {"official_images": 2563, "expected_loaded": 2563, "expected_objects": 8275, "rejected": 0},
+        "train": {
+            "images_total": 3000,
+            "images_with_objects": 2950,
+            "background_images": 50,
+            "corrupt_images": 0,
+            "objects": 9731,
+        },
+        "val": {
+            "images_total": 1800,
+            "images_with_objects": 1765,
+            "background_images": 35,
+            "corrupt_images": 0,
+            "objects": 5704,
+        },
+        "test": {
+            "images_total": 2563,
+            "images_with_objects": 2563,
+            "background_images": 0,
+            "corrupt_images": 0,
+            "objects": 8275,
+        },
     }
 
     root_path = None
@@ -679,42 +724,177 @@ def build_split_audit(data_yaml_path: Path, out_dir: Path) -> List[Dict]:
                         corrupt_imgs.append(im_p.name)
 
         if actual_img_count is not None:
-            total_off = actual_img_count
-            loaded = total_off - len(empty_lbls) - len(missing_lbls) - len(corrupt_imgs)
-            diff = total_off - loaded
-            sample_rejected = (empty_lbls + missing_lbls + corrupt_imgs)[:5]
-            reasons = f"empty_labels: {len(empty_lbls)}, missing: {len(missing_lbls)}, corrupt: {len(corrupt_imgs)}"
+            tot_imgs = actual_img_count
+            bg_imgs = len(empty_lbls) + len(missing_lbls)
+            corr_imgs = len(corrupt_imgs)
+            with_objs = tot_imgs - bg_imgs - corr_imgs
             tot_objs = actual_objs
         else:
-            total_off = off_info["official_images"]
-            loaded = off_info["expected_loaded"]
-            diff = off_info["rejected"]
-            tot_objs = off_info["expected_objects"]
-            sample_rejected = ["e.g. background scenes with 0 annotated objects"] if diff > 0 else ["none"]
-            reasons = f"empty_background_labels (0 annotated objects): {diff}" if diff > 0 else "all valid"
+            tot_imgs = off_info["images_total"]
+            with_objs = off_info["images_with_objects"]
+            bg_imgs = off_info["background_images"]
+            corr_imgs = off_info["corrupt_images"]
+            tot_objs = off_info["objects"]
 
         audit_rows.append(
             {
                 "split": split,
-                "official_images": total_off,
-                "dataset_loaded_images": loaded,
-                "total_objects": tot_objs,
-                "diff_images": diff,
-                "missing_labels_count": len(missing_lbls) if actual_img_count else 0,
-                "empty_labels_count": len(empty_lbls) if actual_img_count else diff,
-                "corrupt_count": len(corrupt_imgs) if actual_img_count else 0,
-                "rejection_reasons": reasons,
-                "sample_rejected_files": "; ".join(sample_rejected),
+                "images_total": tot_imgs,
+                "images_with_objects": with_objs,
+                "background_images": bg_imgs,
+                "corrupt_images": corr_imgs,
+                "objects": tot_objs,
             }
         )
 
     csv_out = out_dir / "split_audit.csv"
     with open(csv_out, "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=list(audit_rows[0].keys()))
+        writer = csv.DictWriter(
+            f,
+            fieldnames=[
+                "split",
+                "images_total",
+                "images_with_objects",
+                "background_images",
+                "corrupt_images",
+                "objects",
+            ],
+        )
         writer.writeheader()
         writer.writerows(audit_rows)
 
     return audit_rows
+
+
+def extract_val_map50_curves(results_dir: Path, out_dir: Path) -> tuple[List[Dict], List[Dict]]:
+    """Extract best checkpoint epoch and validation mAP50 curves across epochs (R1.2, R1.4).
+
+    Produces val_curves_summary.csv and val_curves_map50.csv without subjective interpretations.
+    """
+    curves_csv = REPO_ROOT / "artifacts" / "phase0" / "curves_comparison.csv"
+    all_runs_data: Dict[str, Dict] = {}
+
+    # 1. Historical runs in curves_comparison.csv
+    if curves_csv.is_file():
+        try:
+            with open(curves_csv, "r", encoding="utf-8") as f:
+                reader = csv.DictReader(f)
+                for r in reader:
+                    rname = r.get("run", "")
+                    if not rname:
+                        continue
+                    if rname not in all_runs_data:
+                        all_runs_data[rname] = {
+                            "source": "artifacts/phase0/curves_comparison.csv",
+                            "points": [],
+                        }
+                    try:
+                        ep = int(r.get("epoch", 0))
+                        val_map = float(r.get("metrics/mAP50(B)", 0.0))
+                        all_runs_data[rname]["points"].append((ep, val_map))
+                    except ValueError:
+                        pass
+        except Exception as e:
+            print(f"[WARN] Failed to read curves_comparison.csv: {e}")
+
+    # 2. Local results.csv runs
+    search_dirs = [
+        results_dir / "runs",
+        REPO_ROOT / "runs" / "detect" / "runs",
+        REPO_ROOT / "runs",
+        REPO_ROOT / "runs_fixed",
+    ]
+    for sdir in search_dirs:
+        if not sdir.is_dir():
+            continue
+        for res_p in sdir.glob("**/results.csv"):
+            rname = res_p.parent.name
+            if rname in all_runs_data:
+                continue
+            points = []
+            try:
+                with open(res_p, "r", encoding="utf-8") as f:
+                    rdr = csv.DictReader(f)
+                    fieldnames = [c.strip() for c in rdr.fieldnames] if rdr.fieldnames else []
+                    map_col = None
+                    for candidate in ["metrics/mAP50(B)", "val/mAP50", "mAP50"]:
+                        if candidate in fieldnames:
+                            map_col = candidate
+                            break
+                    if not map_col:
+                        continue
+                    epoch_col = "epoch" if "epoch" in fieldnames else fieldnames[0]
+                    for row in rdr:
+                        row_clean = {k.strip(): v.strip() for k, v in row.items()}
+                        try:
+                            ep = int(row_clean.get(epoch_col, 0))
+                            val_map = float(row_clean.get(map_col, 0.0))
+                            points.append((ep, val_map))
+                        except ValueError:
+                            pass
+            except Exception:
+                pass
+            if points:
+                rel_src = str(res_p.relative_to(REPO_ROOT)) if res_p.is_relative_to(REPO_ROOT) else str(res_p)
+                all_runs_data[rname] = {
+                    "source": rel_src,
+                    "points": points,
+                }
+
+    summary_rows = []
+    curve_rows = []
+
+    for rname, rdata in sorted(all_runs_data.items()):
+        pts = rdata["points"]
+        if not pts:
+            continue
+        pts_sorted = sorted(pts, key=lambda x: x[0])
+        best_ep, best_val = max(pts_sorted, key=lambda x: x[1])
+        final_ep, final_val = pts_sorted[-1]
+        tot_eps = len(pts_sorted)
+
+        summary_rows.append(
+            {
+                "run": rname,
+                "total_epochs": tot_eps,
+                "best_epoch": best_ep,
+                "best_val_mAP50": round(best_val, 4),
+                "final_epoch": final_ep,
+                "final_val_mAP50": round(final_val, 4),
+                "source": rdata["source"],
+            }
+        )
+
+        for ep, val_map in pts_sorted:
+            curve_rows.append(
+                {
+                    "run": rname,
+                    "epoch": ep,
+                    "val_mAP50": round(val_map, 6),
+                    "source": rdata["source"],
+                }
+            )
+
+    # Save summary
+    sum_csv = out_dir / "val_curves_summary.csv"
+    with open(sum_csv, "w", newline="", encoding="utf-8") as f:
+        if summary_rows:
+            writer = csv.DictWriter(f, fieldnames=list(summary_rows[0].keys()))
+            writer.writeheader()
+            writer.writerows(summary_rows)
+
+    # Save detailed curves
+    crv_csv = out_dir / "val_curves_map50.csv"
+    with open(crv_csv, "w", newline="", encoding="utf-8") as f:
+        if curve_rows:
+            writer = csv.DictWriter(f, fieldnames=list(curve_rows[0].keys()))
+            writer.writeheader()
+            writer.writerows(curve_rows)
+
+    print(f"[PASSPORT] Validation mAP50 curve summary saved to: {sum_csv}")
+    print(f"[PASSPORT] Detailed epoch curves saved to: {crv_csv}")
+
+    return summary_rows, curve_rows
 
 
 if __name__ == "__main__":

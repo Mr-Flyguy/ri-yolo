@@ -21,6 +21,7 @@ import os
 from pathlib import Path
 import sys
 import time
+from typing import Optional
 
 # Ensure ultralytics is in sys.path
 ROOT = Path(__file__).resolve().parents[2]
@@ -31,6 +32,8 @@ from scripts.revision.config import (  # noqa: E402
     DEFAULT_DATA_YAML,
     DEFAULT_RESULTS_DIR,
     DEFAULT_SMOKE_DIR,
+    REPO_ROOT,
+    REPRO_CHECK_RUN,
     init_nms_backend,
     resolve_data_yaml,
 )
@@ -52,7 +55,11 @@ class TeeLogger:
         self.log_file = open(log_path, "a", encoding="utf-8")
 
     def write(self, message):
-        self.terminal.write(message)
+        try:
+            self.terminal.write(message)
+        except UnicodeEncodeError:
+            enc = getattr(self.terminal, "encoding", "utf-8") or "utf-8"
+            self.terminal.write(message.encode(enc, errors="replace").decode(enc))
         self.log_file.write(message)
         self.log_file.flush()
 
@@ -82,14 +89,19 @@ def parse_args():
         "--with-mosaic", action="store_true", help="Include priority 2 mosaic runs (close_mosaic=0, 50)"
     )
     parser.add_argument(
-        "--no-ep40sgd",
+        "--with-ep40sgd",
         action="store_true",
-        help="Exclude control series ep40-sgd (6 runs with optimizer=SGD, lr0=0.01)",
+        help="Include control series ep40-sgd (6 runs with optimizer=SGD, lr0=0.01; disabled by default)",
     )
     parser.add_argument(
         "--repro-check",
         action="store_true",
-        help="Retrain e5p__baseline-ep40__s0 as e9p__repro-baseline-ep40__s0 and check mAP50 vs 0.7159",
+        help="Explicitly enable reproducibility check run e9p (also enabled by default via repro gate)",
+    )
+    parser.add_argument(
+        "--skip-repro-gate",
+        action="store_true",
+        help="Skip reproducibility check gate (|Delta| <= 0.3 pp) before bulk training",
     )
     parser.add_argument(
         "--dry-run", action="store_true", help="Display execution plan and time estimates without executing"
@@ -151,6 +163,100 @@ names:
     return data_yaml_p
 
 
+def check_reproducibility_gate(
+    data_yaml: Path,
+    device: str,
+    runs_dir: Path,
+    smoke: bool = False,
+    force: bool = False,
+    dry_run: bool = False,
+    results_dir: Optional[Path] = None,
+) -> bool:
+    """Execute e9p reproducibility check before bulk training.
+
+    Compares newly trained e9p__repro-baseline-ep40__s0 against target 0.7159.
+    Returns True if PASS (|Δ| <= 0.3 pp), False otherwise.
+    """
+    from scripts.revision.stage_eval import evaluate_checkpoint
+    from scripts.revision.stage_train import execute_single_run
+
+    target_mAP50 = float(REPRO_CHECK_RUN.get("target_mAP50", 0.7159))
+    tolerance_pp = float(REPRO_CHECK_RUN.get("tolerance", 0.003)) * 100.0  # 0.30 pp
+
+    print("=" * 80)
+    print("  REPRODUCIBILITY GATE: VERIFYING BASELINE BEFORE BULK TRAINING (R1.2)")
+    print("=" * 80)
+    print("  Target Run        : e5p__baseline-ep40__s0 (historical 40-epoch baseline)")
+    print(f"  Repro Run         : {REPRO_CHECK_RUN['run']}")
+    print(f"  Expected mAP50    : {target_mAP50:.4f} ({target_mAP50 * 100:.2f}%)")
+    print(f"  Allowed tolerance : +- {tolerance_pp:.2f} pp")
+    print("=" * 80 + "\n")
+
+    if dry_run:
+        print("[DRY-RUN] Repro gate check planned: train e9p, evaluate on val, require |Delta| <= 0.3 pp.")
+        return True
+
+    # 1. Train e9p
+    print("[REPRO GATE] Training reproducibility model e9p__repro-baseline-ep40__s0...")
+    execute_single_run(
+        exp_info=REPRO_CHECK_RUN,
+        data_yaml=data_yaml,
+        device=device,
+        runs_dir=runs_dir,
+        smoke=smoke,
+        force=force,
+        results_dir=results_dir,
+    )
+
+    ckpt_candidates = [
+        runs_dir / REPRO_CHECK_RUN["run"] / "weights" / "best.pt",
+        REPO_ROOT / "runs" / "detect" / "runs" / REPRO_CHECK_RUN["run"] / "weights" / "best.pt",
+        REPO_ROOT / "runs" / REPRO_CHECK_RUN["run"] / "weights" / "best.pt",
+    ]
+    ckpt = next((c for c in ckpt_candidates if c.is_file()), None)
+    if not ckpt:
+        print(f"[REPRO GATE ERROR] Checkpoint for {REPRO_CHECK_RUN['run']} not found at {ckpt_candidates[0]}")
+        return False
+
+    # 2. Evaluate on split=val
+    print(f"\n[REPRO GATE] Evaluating {ckpt} on validation split...")
+    try:
+        val_stats = evaluate_checkpoint(
+            ckpt_path=ckpt,
+            data_yaml=data_yaml,
+            split="val",
+            device=device,
+            batch=4 if smoke else 16,
+        )
+        observed_mAP50 = float(val_stats.get("mAP50", 0.0))
+    except Exception as e:
+        print(f"[REPRO GATE ERROR] Validation failed: {e}")
+        return False
+
+    diff_pp = (observed_mAP50 - target_mAP50) * 100.0
+    abs_diff = abs(diff_pp)
+    verdict = "PASS" if abs_diff <= tolerance_pp else "FAIL"
+
+    print("\n" + "=" * 80)
+    print(f"  REPRODUCIBILITY GATE VERDICT: [{verdict}]")
+    print("=" * 80)
+    print("  Target Run   : e5p__baseline-ep40__s0")
+    print(f"  Repro Run    : {REPRO_CHECK_RUN['run']}")
+    print(f"  Target mAP50 : {target_mAP50:.4f} ({target_mAP50 * 100:.2f}%)")
+    print(f"  Observed mAP : {observed_mAP50:.4f} ({observed_mAP50 * 100:.2f}%)")
+    print(f"  Difference   : {diff_pp:+.2f} pp (tolerance: +-{tolerance_pp:.2f} pp)")
+    print(f"  Verdict      : {verdict}")
+    print("=" * 80 + "\n")
+
+    if verdict != "PASS":
+        if smoke:
+            print("[REPRO GATE] In smoke mode (tiny fixture), discrepancy is expected. Proceeding...")
+            return True
+        return False
+
+    return True
+
+
 def main():
     args = parse_args()
 
@@ -196,6 +302,8 @@ def main():
     print(f"Smoke Mode   : {args.smoke}")
     print(f"Force Re-run : {args.force}")
     print(f"With Mosaic  : {args.with_mosaic}")
+    print(f"With EP40SGD : {args.with_ep40sgd}")
+    print(f"Skip Repro   : {args.skip_repro_gate}")
     print(f"Results Dir  : {results_dir}")
     print(f"Log File     : {master_log}")
     print("=" * 80 + "\n")
@@ -212,15 +320,43 @@ def main():
             run_stage_info(results_dir=results_dir, data_yaml=data_yaml, dry_run=args.dry_run)
 
         elif st == "train":
+            runs_dir = results_dir / "runs" if args.smoke else REPO_ROOT / "runs" / "detect" / "runs"
+
+            if not args.skip_repro_gate:
+                gate_passed = check_reproducibility_gate(
+                    data_yaml=data_yaml,
+                    device=device,
+                    runs_dir=runs_dir,
+                    smoke=args.smoke,
+                    force=args.force,
+                    dry_run=args.dry_run,
+                    results_dir=results_dir,
+                )
+                if not gate_passed:
+                    print("\n" + "!" * 80)
+                    print("  [FATAL] REPRODUCIBILITY GATE FAILED (|Delta| > 0.3 pp)!")
+                    print("  Comparing e9p__repro-baseline-ep40__s0 vs historical e5p__baseline-ep40__s0.")
+                    print("  Bulk training has been HALTED to prevent wasting GPU compute on an unverified setup.")
+                    print("  What to compare:")
+                    print("    1. Ultralytics version & PyTorch / CUDA environment in environment.json")
+                    print("    2. ExDark dataset splits integrity (labels/val and images/val)")
+                    print("    3. Optimizer settings (ensure optimizer='auto', no manual lr0 drift)")
+                    print("  To bypass this gate and continue bulk training anyway, run with:")
+                    print("    python scripts/revision/run_all.py --stage all --skip-repro-gate")
+                    print("!" * 80 + "\n")
+                    sys.exit(1)
+
             run_stage_train(
                 data_yaml=data_yaml,
                 device=device,
                 with_mosaic=args.with_mosaic,
-                with_ep40sgd=not args.no_ep40sgd,
-                repro_check=args.repro_check,
+                with_ep40sgd=args.with_ep40sgd,
+                repro_check=False,
                 dry_run=args.dry_run,
                 smoke=args.smoke,
                 force=args.force,
+                runs_dir=runs_dir,
+                results_dir=results_dir,
             )
 
         elif st == "eval":
@@ -229,8 +365,8 @@ def main():
                 data_yaml=data_yaml,
                 device=device,
                 with_mosaic=args.with_mosaic,
-                with_ep40sgd=not args.no_ep40sgd,
-                repro_check=args.repro_check,
+                with_ep40sgd=args.with_ep40sgd,
+                repro_check=True,
                 dry_run=args.dry_run,
                 smoke=args.smoke,
                 force=args.force,

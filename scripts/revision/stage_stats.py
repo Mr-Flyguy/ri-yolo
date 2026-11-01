@@ -249,12 +249,18 @@ def run_stage_stats_for_split(
         ("base_ep60_vs_ep100", groups["base_100"], groups["base_60"]),
         ("module_ep40_vs_ep100", groups["module_100"], groups["module_40"]),
         ("module_ep60_vs_ep100", groups["module_100"], groups["module_60"]),
-        # Control comparisons ep40-sgd (R1.2)
-        ("base_ep40sgd_vs_ep100", groups["base_100"], groups["base_40_sgd"]),
-        ("module_ep40sgd_vs_ep100", groups["module_100"], groups["module_40_sgd"]),
-        ("base_ep40auto_vs_ep40sgd", groups["base_40_sgd"], groups["base_40"]),
-        ("module_ep40auto_vs_ep40sgd", groups["module_40_sgd"], groups["module_40"]),
     ]
+
+    # Only include control comparisons ep40-sgd if runs were trained/evaluated
+    if len(groups["base_40_sgd"]) > 0 or len(groups["module_40_sgd"]) > 0:
+        comparisons.extend(
+            [
+                ("base_ep40sgd_vs_ep100", groups["base_100"], groups["base_40_sgd"]),
+                ("module_ep40sgd_vs_ep100", groups["module_100"], groups["module_40_sgd"]),
+                ("base_ep40auto_vs_ep40sgd", groups["base_40_sgd"], groups["base_40"]),
+                ("module_ep40auto_vs_ep40sgd", groups["module_40_sgd"], groups["module_40"]),
+            ]
+        )
 
     stat_rows = []
     discrepancies = []

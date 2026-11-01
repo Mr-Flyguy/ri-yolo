@@ -197,7 +197,7 @@ def run_stage_eval(
     data_yaml: Path,
     device: str = "0",
     with_mosaic: bool = False,
-    with_ep40sgd: bool = True,
+    with_ep40sgd: bool = False,
     repro_check: bool = False,
     dry_run: bool = False,
     smoke: bool = False,
@@ -394,23 +394,25 @@ def run_stage_eval(
             None,
         )
         if repro_val:
-            try:
-                m_val = float(repro_val.get("mAP50", 0.0))
-                target = float(REPRO_CHECK_RUN["target_mAP50"])
-                diff_pp = (m_val - target) * 100.0
-                tol_pp = float(REPRO_CHECK_RUN["tolerance"]) * 100.0
-                status_repro = "PASS" if abs(diff_pp) <= tol_pp else "DISCREPANCY"
-                print("=" * 80)
-                print(f"  REPRODUCIBILITY CHECK ({status_repro})")
-                print("=" * 80)
-                print("  Run         : e9p__repro-baseline-ep40__s0")
-                print(f"  Observed mAP: {m_val:.4f} ({m_val*100:.2f}%)")
-                print(f"  Target mAP  : {target:.4f} ({target*100:.2f}%)")
-                print(f"  Difference  : {diff_pp:+.2f} pp (tolerance: +-0.30 pp)")
-                print(f"  Verdict     : [{'OK' if status_repro == 'PASS' else 'WARN - outside +-0.3pp tolerance'}]")
-                print("=" * 80 + "\n")
-            except Exception as e:
-                print(f"[WARN] Failed to compute reproducibility difference: {e}")
+            m_val_str = repro_val.get("mAP50", "NA")
+            if m_val_str not in ("NA", None, ""):
+                try:
+                    m_val = float(m_val_str)
+                    target = float(REPRO_CHECK_RUN["target_mAP50"])
+                    diff_pp = (m_val - target) * 100.0
+                    tol_pp = float(REPRO_CHECK_RUN["tolerance"]) * 100.0
+                    status_repro = "PASS" if abs(diff_pp) <= tol_pp else "DISCREPANCY"
+                    print("=" * 80)
+                    print(f"  REPRODUCIBILITY CHECK ({status_repro})")
+                    print("=" * 80)
+                    print("  Run         : e9p__repro-baseline-ep40__s0")
+                    print(f"  Observed mAP: {m_val:.4f} ({m_val*100:.2f}%)")
+                    print(f"  Target mAP  : {target:.4f} ({target*100:.2f}%)")
+                    print(f"  Difference  : {diff_pp:+.2f} pp (tolerance: +-0.30 pp)")
+                    print(f"  Verdict     : [{'OK' if status_repro == 'PASS' else 'WARN - outside +-0.3pp tolerance'}]")
+                    print("=" * 80 + "\n")
+                except Exception as e:
+                    print(f"[WARN] Failed to compute reproducibility difference: {e}")
 
     return out_csv
 
@@ -420,7 +422,11 @@ if __name__ == "__main__":
     parser.add_argument("--data", default=str(DEFAULT_DATA_YAML), help="Path to dataset yaml")
     parser.add_argument("--device", default="0" if torch.cuda.is_available() else "cpu", help="Device index or 'cpu'")
     parser.add_argument("--with-mosaic", action="store_true", help="Include mosaic runs")
-    parser.add_argument("--no-ep40sgd", action="store_true", help="Exclude control ep40-sgd runs (included by default)")
+    parser.add_argument(
+        "--with-ep40sgd",
+        action="store_true",
+        help="Include control series ep40-sgd (6 runs with optimizer=SGD, lr0=0.01; disabled by default)",
+    )
     parser.add_argument("--repro-check", action="store_true", help="Evaluate reproducibility check run e9p vs 0.7159")
     parser.add_argument("--dry-run", action="store_true", help="Dry run plan")
     parser.add_argument("--smoke", action="store_true", help="Smoke mode")
@@ -432,7 +438,7 @@ if __name__ == "__main__":
         data_yaml=resolve_data_yaml(args.data),
         device=args.device,
         with_mosaic=args.with_mosaic,
-        with_ep40sgd=not args.no_ep40sgd,
+        with_ep40sgd=args.with_ep40sgd,
         repro_check=args.repro_check,
         dry_run=args.dry_run,
         smoke=args.smoke,
