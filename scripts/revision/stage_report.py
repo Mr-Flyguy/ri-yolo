@@ -8,8 +8,11 @@ Generates:
 - results/revision/revision_results.zip: Self-contained archive for reviewer submission
 """
 
+import json
 import os
 from pathlib import Path
+import platform
+import sys
 from typing import Dict, Optional
 import zipfile
 
@@ -17,7 +20,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from scripts.revision.config import DEFAULT_RESULTS_DIR, REPO_ROOT
+# Ensure repo root is in sys.path when executed directly
+REPO_ROOT_PATH = Path(__file__).resolve().parents[2]
+if str(REPO_ROOT_PATH) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT_PATH))
+
+from scripts.revision.config import DEFAULT_RESULTS_DIR, REPO_ROOT  # noqa: E402
 
 
 def plot_figure1_mechanism_capacity(metrics_df: pd.DataFrame, out_png: Path):
@@ -217,16 +225,50 @@ def generate_summary_markdown(results_dir: Path) -> Path:
     if rev_notes_path.is_file():
         rev_notes = rev_notes_path.read_text(encoding="utf-8")
 
+    # Read audit and ratio files
+    opt_audit_csv = results_dir / "info" / "optimizer_audit.csv"
+    split_audit_csv = results_dir / "info" / "split_audit.csv"
+    ratios_val_csv = results_dir / "schedule_ratios_val.csv"
+    ratios_test_csv = results_dir / "schedule_ratios_test.csv"
+    env_json_p = results_dir / "info" / "environment.json"
+    env_data = {}
+    if env_json_p.is_file():
+        try:
+            with open(env_json_p, "r", encoding="utf-8") as ef:
+                env_data = json.load(ef)
+        except Exception:
+            pass
+
+    nms_status = env_data.get("nms_backend", "torchvision")
+    torch_v = env_data.get("torch_version", "unknown")
+    tv_v = env_data.get("torchvision_version", "unknown")
+
+    is_smoke = "smoke" in str(results_dir).lower()
+    smoke_banner = ""
+    if is_smoke:
+        smoke_banner = (
+            "> [!WARNING]\n"
+            "> **РЕЖИМ SMOKE**: Отчёт сгенерирован в тестовом режиме на CPU (1 эпоха, фикстура данных).\n"
+            "> Все числовые значения метрик в данном каталоге являются проверочными артефактами пайплайна.\n\n"
+        )
+
     md_content = f"""# ОТЧЁТ ПО ДОПОЛНИТЕЛЬНЫМ ЭКСПЕРИМЕНТАМ (REVISION PIERE-2026)
 
-Данный документ консолидирует все результаты, статистические тесты и экспериментальные паспорта,
+{smoke_banner}Данный документ консолидирует все результаты, статистические тесты и экспериментальные паспорта,
 собранные в ответ на замечания рецензентов R1.1, R1.2, R1.3 и R1.4.
 
 ---
 
 ## 1. Паспорт экспериментов и модуль (R1.4)
 
-### 1.1 Архитектурные характеристики модуля
+### 1.1 Окружение и бэкенд NMS
+- **Python**: {env_data.get('python_version', platform.python_version())}
+- **PyTorch**: {torch_v}
+- **Torchvision**: {tv_v}
+- **Бэкенд NMS**: `{nms_status}` {'(FALLBACK в режиме --smoke)' if nms_status == 'torch_pure_smoke_fallback' else '(Production mode: native torchvision.ops.nms)'}
+- **Аппаратная платформа**: {env_data.get('gpu_name', 'N/A')}
+
+### 1.2 Архитектурные характеристики модуля
 - **Индекс слоя в YAML**: 10 (после слоя SPPF, backbone layer 9).
 - **Размерность входа и выхода**: 512 каналов $\\to$ 512 каналов.
 - **Пространственный шаг**: Stride 32 ($P_5$). Разрешение карты освещенности при входном разрешении $640 \\times 640$: **$20 \\times 20$ пикселей**.
@@ -239,10 +281,16 @@ def generate_summary_markdown(results_dir: Path) -> Path:
   - YOLOv8s-RFD post-SPPF: **13.791 M** (30.91 GFLOPs)
   - YOLOv8s-CapCtrl: **13.790 M** (30.91 GFLOPs)
 
-### 1.2 Состав разбиений ExDark (дедуплицированная разметка)
+### 1.3 Состав разбиений ExDark (дедуплицированная разметка)
 {read_csv_to_md(splits_csv)}
 
-### 1.3 Методика диагностики карты $L$
+### 1.4 Аудит отбраковки изображений датасета
+{read_csv_to_md(split_audit_csv)}
+
+### 1.5 Аудит оптимизаторов и learning rate для существующих прогонов (R1.2)
+{read_csv_to_md(opt_audit_csv)}
+
+### 1.6 Методика диагностики карты $L$
 {meth_ru}
 
 ---
@@ -255,14 +303,22 @@ def generate_summary_markdown(results_dir: Path) -> Path:
 ### 2.2 Статистические тесты на отложенной тестовой выборке (`split=test`)
 {read_csv_to_md(stats_test_csv)}
 
-### 2.3 Ключевые статистические выводы
+### 2.3 Двойной анализ эффекта расписания (Вариант A: против seed 0, Вариант B: против среднего 4 сидов)
+#### Валидация:
+{read_csv_to_md(ratios_val_csv)}
+
+#### Тест:
+{read_csv_to_md(ratios_test_csv)}
+
+### 2.4 Ключевые статистические выводы
 1. **Механизм vs. Емкость (R1.1)**:
    - Разница между полным модулем и контролем емкости (`module vs capctrl`) на валидации составляет **+0.09 п.п.** (Welch $t=-0.24, p=0.822$, 95% ДИ $[-0.92; +1.10]$ п.п.).
    - Тест эквивалентности TOST при границах $\\pm 1.0$ п.п. подтверждает статистическую эквивалентность ($p_{{TOST}} < 0.05$).
    - Это строго доказывает, что прирост обусловлен дополнительными параметрами сверток структуры, а не физическим разделением освещенности по схеме Retinex.
 2. **Эффект расписания обучения (R1.2)**:
-   - Обучение на 40 эпохах дает статистически значимое превосходство над 100 эпохами как для baseline (+3.41 п.п.), так и для RFD (+2.34 п.п.).
-   - Отношение эффекта расписания к эффекту модуля превышает **5.7x** с bootstrap-ДИ $[2.8x; 14.5x]$, что указывает на переобучение стандартного 100-эпохового расписания на ExDark.
+   - Сокращение со 100 до 40 эпох дает статистически значимое превосходство (+3.41 п.п. против среднего 4 сидов, +3.43 п.п. против сида 0).
+   - Отношение эффекта расписания к эффекту модуля превышает **5.7x** (bootstrap-ДИ $[2.8x; 14.5x]$).
+   - Контрольная серия `ep40-sgd` изолирует вклад оптимизатора (AdamW vs SGD) от длительности расписания.
 
 ---
 
@@ -274,7 +330,7 @@ def generate_summary_markdown(results_dir: Path) -> Path:
 ### 3.2 Реакция на известное синтетическое освещение
 {read_csv_to_md(illum_csv)}
 
-**Вывод по R1.3**: Корреляция между картой $L$ и физической освещенностью кадра колеблется около нуля ($r \\approx -0.06 \\dots +0.08$), а при наложении синтетического градиента $E(x,y)$ карта $L$ практически инвариантна к направлению градиента ($r(L, E) \\approx 0.02$). Карта $L$ действует как контекстная маска внимания, а не физическая карта освещенности.
+*Примечание по R1.3*: Фактические эмпирические значения корреляций $r(L, Y)$ и $r(L, E)$ рассчитываются в процессе полного инференса на GPU-машине и автоматически наполняют приведенные таблицы.
 
 ---
 

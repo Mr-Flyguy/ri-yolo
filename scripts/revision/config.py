@@ -8,42 +8,78 @@ import types
 from typing import Dict, List, Optional
 import torch
 
-# Handle broken torchvision installations gracefully
-try:
-    import torchvision  # noqa: F401
-except (ImportError, RuntimeError):
+TORCH_VERSION = str(getattr(torch, "__version__", "unknown"))
+TORCHVISION_VERSION = "unavailable"
+NMS_BACKEND = "torchvision"
 
-    def _pure_torch_nms(boxes, scores, iou_threshold):
-        if boxes.numel() == 0:
-            return torch.empty((0,), dtype=torch.int64, device=boxes.device)
-        x1, y1, x2, y2 = boxes[:, 0], boxes[:, 1], boxes[:, 2], boxes[:, 3]
-        areas = (x2 - x1) * (y2 - y1)
-        order = scores.argsort(descending=True)
-        keep = []
-        while order.numel() > 0:
-            i = order[0]
-            keep.append(i.item())
-            if order.numel() == 1:
-                break
-            xx1 = torch.max(x1[i], x1[order[1:]])
-            yy1 = torch.max(y1[i], y1[order[1:]])
-            xx2 = torch.min(x2[i], x2[order[1:]])
-            yy2 = torch.min(y2[i], y2[order[1:]])
-            w = torch.clamp(xx2 - xx1, min=0.0)
-            h = torch.clamp(yy2 - yy1, min=0.0)
-            inter = w * h
-            ovr = inter / (areas[i] + areas[order[1:]] - inter)
-            ids = (ovr <= iou_threshold).nonzero().squeeze(-1)
-            if ids.numel() == 0:
-                break
-            order = order[ids + 1]
-        return torch.tensor(keep, dtype=torch.int64, device=boxes.device)
 
-    tv = types.ModuleType("torchvision")
-    tv.ops = types.ModuleType("ops")
-    tv.ops.nms = _pure_torch_nms
-    sys.modules["torchvision"] = tv
-    sys.modules["torchvision.ops"] = tv.ops
+def init_nms_backend(smoke: bool = False) -> str:
+    """Validate torchvision availability and configure NMS backend.
+
+    In production mode, raises RuntimeError if torchvision is unavailable or broken.
+    In smoke mode, falls back to pure PyTorch NMS implementation and sets flag.
+    """
+    global NMS_BACKEND, TORCHVISION_VERSION
+    try:
+        import torchvision
+
+        TORCHVISION_VERSION = str(getattr(torchvision, "__version__", "unknown"))
+        test_boxes = torch.tensor([[0.0, 0.0, 10.0, 10.0]], dtype=torch.float32)
+        test_scores = torch.tensor([0.9], dtype=torch.float32)
+        _ = torchvision.ops.nms(test_boxes, test_scores, 0.5)
+        NMS_BACKEND = "torchvision"
+        return "torchvision"
+    except Exception as e:
+        if smoke:
+            NMS_BACKEND = "pure_torch_smoke_fallback"
+
+            def _pure_torch_nms(boxes, scores, iou_threshold):
+                if boxes.numel() == 0:
+                    return torch.empty((0,), dtype=torch.int64, device=boxes.device)
+                x1, y1, x2, y2 = boxes[:, 0], boxes[:, 1], boxes[:, 2], boxes[:, 3]
+                areas = (x2 - x1) * (y2 - y1)
+                order = scores.argsort(descending=True)
+                keep = []
+                while order.numel() > 0:
+                    i = order[0]
+                    keep.append(i.item())
+                    if order.numel() == 1:
+                        break
+                    xx1 = torch.max(x1[i], x1[order[1:]])
+                    yy1 = torch.max(y1[i], y1[order[1:]])
+                    xx2 = torch.min(x2[i], x2[order[1:]])
+                    yy2 = torch.min(y2[i], y2[order[1:]])
+                    w = torch.clamp(xx2 - xx1, min=0.0)
+                    h = torch.clamp(yy2 - yy1, min=0.0)
+                    inter = w * h
+                    ovr = inter / (areas[i] + areas[order[1:]] - inter)
+                    ids = (ovr <= iou_threshold).nonzero().squeeze(-1)
+                    if ids.numel() == 0:
+                        break
+                    order = order[ids + 1]
+                return torch.tensor(keep, dtype=torch.int64, device=boxes.device)
+
+            tv = types.ModuleType("torchvision")
+            tv.ops = types.ModuleType("ops")
+            tv.ops.nms = _pure_torch_nms
+            sys.modules["torchvision"] = tv
+            sys.modules["torchvision.ops"] = tv.ops
+            print(
+                f"[WARN] torchvision.ops.nms is unavailable ({e}). "
+                "Active backend: pure_torch_smoke_fallback (ALLOWED EXCLUSIVELY FOR --smoke MODE)."
+            )
+            return "pure_torch_smoke_fallback"
+        else:
+            raise RuntimeError(
+                f"\n{'='*80}\n"
+                f"FATAL ERROR: torchvision.ops.nms is missing or broken in production environment!\n"
+                f"Detected: torch=={TORCH_VERSION}, torchvision=={TORCHVISION_VERSION} ({e})\n"
+                "In accordance with revision specifications, production runs require verified torchvision.\n"
+                "Fix torchvision on your GPU machine (e.g. 'pip install torchvision==0.20' for torch 2.5.x) "
+                "or pass --smoke for CPU testing.\n"
+                f"{'='*80}\n"
+            )
+
 
 # Base filesystem directories
 REVISION_ROOT = Path(__file__).resolve().parent
@@ -53,7 +89,7 @@ DIAG_IMAGE_LIST = REPO_ROOT / "artifacts" / "phase2" / "diag_image_list.txt"
 
 # Results and artifacts directories
 DEFAULT_RESULTS_DIR = REPO_ROOT / "results" / "revision"
-DEFAULT_SMOKE_DIR = REPO_ROOT / "results" / "revision" / "smoke"
+DEFAULT_SMOKE_DIR = REPO_ROOT / "results" / "revision_smoke"
 
 # Evaluation protocol constants (strict reproducibility)
 VAL_PROTOCOL_NAME = "Ultralytics DetectionValidator (faster-coco-eval)"
@@ -500,13 +536,15 @@ EXISTING_RUN_SPECS: List[Dict] = [
 # New Training Catalog (R1.2): 8 Mandatory + 4 Priority 2 (Mosaic)
 # ---------------------------------------------------------------------------
 MANDATORY_NEW_RUNS: List[Dict] = [
-    # 40 epochs
+    # 40 epochs (AdamW lr0=0.000625, matching seed 0 auto-selection)
     {
         "run": "e5p__baseline-ep40__s1",
         "family": "baseline",
         "epochs": 40,
         "close_mosaic": 10,
         "seed": 1,
+        "optimizer": "AdamW",
+        "lr0": 0.000625,
         "cfg": "yolov8s.yaml",
         "candidates": ["runs/detect/runs/e5p__baseline-ep40__s1/weights/best.pt"],
     },
@@ -516,6 +554,8 @@ MANDATORY_NEW_RUNS: List[Dict] = [
         "epochs": 40,
         "close_mosaic": 10,
         "seed": 2,
+        "optimizer": "AdamW",
+        "lr0": 0.000625,
         "cfg": "yolov8s.yaml",
         "candidates": ["runs/detect/runs/e5p__baseline-ep40__s2/weights/best.pt"],
     },
@@ -525,6 +565,8 @@ MANDATORY_NEW_RUNS: List[Dict] = [
         "epochs": 40,
         "close_mosaic": 10,
         "seed": 1,
+        "optimizer": "AdamW",
+        "lr0": 0.000625,
         "cfg": "ultralytics/cfg/models/v8/yolov8s-rfd-postsppf.yaml",
         "candidates": ["runs/detect/runs/e5p__postsppf-ep40__s1/weights/best.pt"],
     },
@@ -534,16 +576,20 @@ MANDATORY_NEW_RUNS: List[Dict] = [
         "epochs": 40,
         "close_mosaic": 10,
         "seed": 2,
+        "optimizer": "AdamW",
+        "lr0": 0.000625,
         "cfg": "ultralytics/cfg/models/v8/yolov8s-rfd-postsppf.yaml",
         "candidates": ["runs/detect/runs/e5p__postsppf-ep40__s2/weights/best.pt"],
     },
-    # 60 epochs
+    # 60 epochs (SGD lr0=0.01, matching seed 0 auto-selection)
     {
         "run": "e5p__baseline-ep60__s1",
         "family": "baseline",
         "epochs": 60,
         "close_mosaic": 10,
         "seed": 1,
+        "optimizer": "AdamW",
+        "lr0": 0.000625,
         "cfg": "yolov8s.yaml",
         "candidates": ["runs/detect/runs/e5p__baseline-ep60__s1/weights/best.pt"],
     },
@@ -553,6 +599,8 @@ MANDATORY_NEW_RUNS: List[Dict] = [
         "epochs": 60,
         "close_mosaic": 10,
         "seed": 2,
+        "optimizer": "AdamW",
+        "lr0": 0.000625,
         "cfg": "yolov8s.yaml",
         "candidates": ["runs/detect/runs/e5p__baseline-ep60__s2/weights/best.pt"],
     },
@@ -562,6 +610,8 @@ MANDATORY_NEW_RUNS: List[Dict] = [
         "epochs": 60,
         "close_mosaic": 10,
         "seed": 1,
+        "optimizer": "AdamW",
+        "lr0": 0.000625,
         "cfg": "ultralytics/cfg/models/v8/yolov8s-rfd-postsppf.yaml",
         "candidates": ["runs/detect/runs/e5p__postsppf-ep60__s1/weights/best.pt"],
     },
@@ -571,10 +621,97 @@ MANDATORY_NEW_RUNS: List[Dict] = [
         "epochs": 60,
         "close_mosaic": 10,
         "seed": 2,
+        "optimizer": "AdamW",
+        "lr0": 0.000625,
         "cfg": "ultralytics/cfg/models/v8/yolov8s-rfd-postsppf.yaml",
         "candidates": ["runs/detect/runs/e5p__postsppf-ep60__s2/weights/best.pt"],
     },
 ]
+
+# Control series ep40-sgd (6 runs: epochs=40, optimizer=SGD, lr0=0.01, seeds 0, 1, 2)
+CONTROL_EP40_SGD_RUNS: List[Dict] = [
+    {
+        "run": "e8p__baseline-ep40sgd__s0",
+        "family": "baseline",
+        "epochs": 40,
+        "close_mosaic": 10,
+        "seed": 0,
+        "optimizer": "SGD",
+        "lr0": 0.01,
+        "cfg": "yolov8s.yaml",
+        "candidates": ["runs/detect/runs/e8p__baseline-ep40sgd__s0/weights/best.pt"],
+    },
+    {
+        "run": "e8p__baseline-ep40sgd__s1",
+        "family": "baseline",
+        "epochs": 40,
+        "close_mosaic": 10,
+        "seed": 1,
+        "optimizer": "SGD",
+        "lr0": 0.01,
+        "cfg": "yolov8s.yaml",
+        "candidates": ["runs/detect/runs/e8p__baseline-ep40sgd__s1/weights/best.pt"],
+    },
+    {
+        "run": "e8p__baseline-ep40sgd__s2",
+        "family": "baseline",
+        "epochs": 40,
+        "close_mosaic": 10,
+        "seed": 2,
+        "optimizer": "SGD",
+        "lr0": 0.01,
+        "cfg": "yolov8s.yaml",
+        "candidates": ["runs/detect/runs/e8p__baseline-ep40sgd__s2/weights/best.pt"],
+    },
+    {
+        "run": "e8p__postsppf-ep40sgd__s0",
+        "family": "postsppf",
+        "epochs": 40,
+        "close_mosaic": 10,
+        "seed": 0,
+        "optimizer": "SGD",
+        "lr0": 0.01,
+        "cfg": "ultralytics/cfg/models/v8/yolov8s-rfd-postsppf.yaml",
+        "candidates": ["runs/detect/runs/e8p__postsppf-ep40sgd__s0/weights/best.pt"],
+    },
+    {
+        "run": "e8p__postsppf-ep40sgd__s1",
+        "family": "postsppf",
+        "epochs": 40,
+        "close_mosaic": 10,
+        "seed": 1,
+        "optimizer": "SGD",
+        "lr0": 0.01,
+        "cfg": "ultralytics/cfg/models/v8/yolov8s-rfd-postsppf.yaml",
+        "candidates": ["runs/detect/runs/e8p__postsppf-ep40sgd__s1/weights/best.pt"],
+    },
+    {
+        "run": "e8p__postsppf-ep40sgd__s2",
+        "family": "postsppf",
+        "epochs": 40,
+        "close_mosaic": 10,
+        "seed": 2,
+        "optimizer": "SGD",
+        "lr0": 0.01,
+        "cfg": "ultralytics/cfg/models/v8/yolov8s-rfd-postsppf.yaml",
+        "candidates": ["runs/detect/runs/e8p__postsppf-ep40sgd__s2/weights/best.pt"],
+    },
+]
+
+# Reproducibility check run (e5p__baseline-ep40__s0 repeated as e9p)
+REPRO_CHECK_RUN: Dict = {
+    "run": "e9p__repro-baseline-ep40__s0",
+    "family": "baseline",
+    "epochs": 40,
+    "close_mosaic": 10,
+    "seed": 0,
+    "optimizer": "AdamW",
+    "lr0": 0.000625,
+    "cfg": "yolov8s.yaml",
+    "candidates": ["runs/detect/runs/e9p__repro-baseline-ep40__s0/weights/best.pt"],
+    "target_mAP50": 0.7159,
+    "tolerance": 0.003,  # +-0.3 pp
+}
 
 MOSAIC_PRIORITY2_RUNS: List[Dict] = [
     {

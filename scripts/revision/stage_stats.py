@@ -18,13 +18,19 @@ Executes complete statistical testing on both val and test splits:
 """
 
 from pathlib import Path
-from typing import Dict, List, Tuple
+import sys
+from typing import Any, Dict, List, Tuple
 
 import numpy as np
 import pandas as pd
 from scipy.stats import mannwhitneyu, t as t_dist
 
-from scripts.revision.config import DEFAULT_RESULTS_DIR, REPO_ROOT
+# Ensure repo root is in sys.path when executed directly
+REPO_ROOT_PATH = Path(__file__).resolve().parents[2]
+if str(REPO_ROOT_PATH) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT_PATH))
+
+from scripts.revision.config import DEFAULT_RESULTS_DIR, REPO_ROOT  # noqa: E402
 
 
 def cohens_d(x: np.ndarray, y: np.ndarray) -> float:
@@ -149,40 +155,48 @@ def compute_tost_equivalence(diff_pp: float, se_pp: float, df: float, bounds: Li
 
 
 def compute_schedule_vs_module_ratio(
-    sched_ep: np.ndarray,
-    sched_base: np.ndarray,
+    sched_series: np.ndarray,
+    base_ref: float,
     mod_100: np.ndarray,
     base_100: np.ndarray,
     n_boot: int = 10000,
     seed: int = 42,
-) -> Dict[str, float]:
-    """Calculate ratio of schedule effect to module effect with 10,000 bootstrap resamples."""
+) -> Dict[str, Any]:
+    """Calculate ratio of schedule effect (relative to base_ref) to module effect with 10,000 bootstrap resamples."""
     np.random.seed(seed)
-    diff_sched = (float(np.mean(sched_ep)) - float(np.mean(sched_base))) * 100.0
-    diff_mod = (float(np.mean(mod_100)) - float(np.mean(base_100))) * 100.0
+    if len(sched_series) == 0 or len(mod_100) == 0 or len(base_100) == 0:
+        return {
+            "sched_diff_pp": "NA",
+            "mod_diff_pp": "NA",
+            "ratio_point": "NA",
+            "bootstrap_ci95_lower": "NA",
+            "bootstrap_ci95_upper": "NA",
+        }
 
+    diff_sched = (float(np.mean(sched_series)) - float(base_ref)) * 100.0
+    diff_mod = (float(np.mean(mod_100)) - float(np.mean(base_100))) * 100.0
     ratio_point = diff_sched / diff_mod if abs(diff_mod) > 1e-6 else float("nan")
 
-    if len(sched_ep) <= 1 or len(mod_100) <= 1:
+    if len(sched_series) <= 1 or len(mod_100) <= 1:
         return {
-            "ratio_point": round(ratio_point, 4) if not np.isnan(ratio_point) else "NA",
+            "sched_diff_pp": round(diff_sched, 2),
+            "mod_diff_pp": round(diff_mod, 2),
+            "ratio_point": round(ratio_point, 2) if not np.isnan(ratio_point) else "NA",
             "bootstrap_ci95_lower": "NA",
             "bootstrap_ci95_upper": "NA",
         }
 
     boot_ratios = []
-    n_se = len(sched_ep)
-    n_sb = len(sched_base)
+    n_s = len(sched_series)
     n_m = len(mod_100)
     n_b = len(base_100)
 
     for _ in range(n_boot):
-        se_samp = np.random.choice(sched_ep, size=n_se, replace=True)
-        sb_samp = np.random.choice(sched_base, size=n_sb, replace=True)
+        s_samp = np.random.choice(sched_series, size=n_s, replace=True)
         m_samp = np.random.choice(mod_100, size=n_m, replace=True)
         b_samp = np.random.choice(base_100, size=n_b, replace=True)
 
-        ds = (np.mean(se_samp) - np.mean(sb_samp)) * 100.0
+        ds = (np.mean(s_samp) - base_ref) * 100.0
         dm = (np.mean(m_samp) - np.mean(b_samp)) * 100.0
         if abs(dm) > 1e-6:
             boot_ratios.append(ds / dm)
@@ -194,9 +208,11 @@ def compute_schedule_vs_module_ratio(
         ci_low, ci_up = float("nan"), float("nan")
 
     return {
-        "ratio_point": round(ratio_point, 4) if not np.isnan(ratio_point) else "NA",
-        "bootstrap_ci95_lower": round(float(ci_low), 4) if not np.isnan(ci_low) else "NA",
-        "bootstrap_ci95_upper": round(float(ci_up), 4) if not np.isnan(ci_up) else "NA",
+        "sched_diff_pp": round(diff_sched, 2),
+        "mod_diff_pp": round(diff_mod, 2),
+        "ratio_point": round(ratio_point, 2) if not np.isnan(ratio_point) else "NA",
+        "bootstrap_ci95_lower": round(float(ci_low), 2) if not np.isnan(ci_low) else "NA",
+        "bootstrap_ci95_upper": round(float(ci_up), 2) if not np.isnan(ci_up) else "NA",
     }
 
 
@@ -216,10 +232,13 @@ def run_stage_stats_for_split(
         "base_100": df[(df["family"] == "baseline") & (df["epochs"] == 100)],
         "module_100": df[(df["family"] == "postsppf") & (df["epochs"] == 100) & (df["close_mosaic"] == 10)],
         "capctrl_100": df[(df["family"] == "capctrl") & (df["epochs"] == 100)],
-        "base_40": df[(df["family"] == "baseline") & (df["epochs"] == 40)],
+        "base_40": df[(df["family"] == "baseline") & (df["epochs"] == 40) & (~df["run"].str.contains("sgd"))],
         "base_60": df[(df["family"] == "baseline") & (df["epochs"] == 60)],
-        "module_40": df[(df["family"] == "postsppf") & (df["epochs"] == 40)],
+        "module_40": df[(df["family"] == "postsppf") & (df["epochs"] == 40) & (~df["run"].str.contains("sgd"))],
         "module_60": df[(df["family"] == "postsppf") & (df["epochs"] == 60)],
+        # Control series ep40-sgd (SGD with lr0=0.01)
+        "base_40_sgd": df[(df["family"] == "baseline") & (df["run"].str.contains("ep40sgd"))],
+        "module_40_sgd": df[(df["family"] == "postsppf") & (df["run"].str.contains("ep40sgd"))],
     }
 
     comparisons = [
@@ -230,6 +249,11 @@ def run_stage_stats_for_split(
         ("base_ep60_vs_ep100", groups["base_100"], groups["base_60"]),
         ("module_ep40_vs_ep100", groups["module_100"], groups["module_40"]),
         ("module_ep60_vs_ep100", groups["module_100"], groups["module_60"]),
+        # Control comparisons ep40-sgd (R1.2)
+        ("base_ep40sgd_vs_ep100", groups["base_100"], groups["base_40_sgd"]),
+        ("module_ep40sgd_vs_ep100", groups["module_100"], groups["module_40_sgd"]),
+        ("base_ep40auto_vs_ep40sgd", groups["base_40_sgd"], groups["base_40"]),
+        ("module_ep40auto_vs_ep40sgd", groups["module_40_sgd"], groups["module_40"]),
     ]
 
     stat_rows = []
@@ -301,21 +325,84 @@ def run_stage_stats_for_split(
                             f"[VERIFIED] module vs capctrl on val reproduces: diff={w['diff_pp']:+.2f} pp, p={w['welch_p']}, 95% CI=[{w['ci95_lower_pp']}, {w['ci95_upper_pp']}]"
                         )
 
-    # Ratio of schedule effect vs module effect
-    sched_40_base = groups["base_40"]["mAP50"].dropna().values if len(groups["base_40"]) > 0 else np.array([])
-    sched_100_base = groups["base_100"]["mAP50"].dropna().values if len(groups["base_100"]) > 0 else np.array([])
-    mod_100 = groups["module_100"]["mAP50"].dropna().values if len(groups["module_100"]) > 0 else np.array([])
+    # Dual schedule effect calculation (R1.2, item 8):
+    # Variant A: against baseline seed 0 (as in original paper: 0.6816 on val)
+    # Variant B: against baseline 4-seed mean (0.6818 on val)
+    base_100_mAP = groups["base_100"]["mAP50"].dropna().values if len(groups["base_100"]) > 0 else np.array([])
+    mod_100_mAP = groups["module_100"]["mAP50"].dropna().values if len(groups["module_100"]) > 0 else np.array([])
 
-    if len(sched_40_base) > 0 and len(sched_100_base) > 0 and len(mod_100) > 0:
-        ratio_res = compute_schedule_vs_module_ratio(sched_40_base, sched_100_base, mod_100, sched_100_base)
-        print(f"\n[RATIO] Schedule effect (40 ep vs 100 ep) vs Module effect on {split_name}:")
-        print(
-            f"        Point estimate: {ratio_res['ratio_point']}x | 95% Bootstrap CI: [{ratio_res['bootstrap_ci95_lower']}; {ratio_res['bootstrap_ci95_upper']}]"
+    base_s0_row = groups["base_100"][groups["base_100"]["run"].str.endswith("__s0")]
+    base_s0_val = (
+        float(base_s0_row["mAP50"].values[0]) if len(base_s0_row) > 0 else (0.6816 if split_name == "val" else 0.6921)
+    )
+    base_mean_val = (
+        float(np.mean(base_100_mAP)) if len(base_100_mAP) > 0 else (0.6818 if split_name == "val" else 0.6922)
+    )
+
+    ratio_rows = []
+    ratio_targets = [
+        ("base_ep40_auto", groups["base_40"]["mAP50"].dropna().values),
+        ("base_ep40_sgd", groups["base_40_sgd"]["mAP50"].dropna().values),
+        ("base_ep60_sgd", groups["base_60"]["mAP50"].dropna().values),
+        ("module_ep40_auto", groups["module_40"]["mAP50"].dropna().values),
+        ("module_ep40_sgd", groups["module_40_sgd"]["mAP50"].dropna().values),
+        ("module_ep60_sgd", groups["module_60"]["mAP50"].dropna().values),
+    ]
+
+    print(f"\n[RATIO] Schedule effect vs Module effect on {split_name.upper()} (dual baseline reference):")
+    print(f"        Ref A (Seed 0 baseline):     {base_s0_val * 100:.2f}% ({base_s0_val:.4f})")
+    print(f"        Ref B (4-seed mean baseline): {base_mean_val * 100:.2f}% ({base_mean_val:.4f})")
+
+    for series_name, series_vals in ratio_targets:
+        if len(series_vals) == 0:
+            continue
+        # Variant A (seed 0)
+        res_a = compute_schedule_vs_module_ratio(series_vals, base_s0_val, mod_100_mAP, base_100_mAP)
+        ratio_rows.append(
+            {
+                "split": split_name,
+                "series": series_name,
+                "baseline_ref_type": "seed_0 (paper)",
+                "baseline_ref_val": round(base_s0_val, 4),
+                "sched_mean": round(float(np.mean(series_vals)), 4),
+                "sched_gain_pp": res_a["sched_diff_pp"],
+                "mod_gain_pp": res_a["mod_diff_pp"],
+                "ratio_point": res_a["ratio_point"],
+                "bootstrap_ci95_lower": res_a["bootstrap_ci95_lower"],
+                "bootstrap_ci95_upper": res_a["bootstrap_ci95_upper"],
+            }
         )
-    else:
-        print(
-            f"\n[RATIO] Schedule effect (40 ep vs 100 ep) vs Module effect on {split_name}: PENDING full schedule data"
+
+        # Variant B (4-seed mean)
+        res_b = compute_schedule_vs_module_ratio(series_vals, base_mean_val, mod_100_mAP, base_100_mAP)
+        ratio_rows.append(
+            {
+                "split": split_name,
+                "series": series_name,
+                "baseline_ref_type": "4seed_mean",
+                "baseline_ref_val": round(base_mean_val, 4),
+                "sched_mean": round(float(np.mean(series_vals)), 4),
+                "sched_gain_pp": res_b["sched_diff_pp"],
+                "mod_gain_pp": res_b["mod_diff_pp"],
+                "ratio_point": res_b["ratio_point"],
+                "bootstrap_ci95_lower": res_b["bootstrap_ci95_lower"],
+                "bootstrap_ci95_upper": res_b["bootstrap_ci95_upper"],
+            }
         )
+
+        print(f"  * {series_name} (n={len(series_vals)}):")
+        print(
+            f"      vs Seed 0:    gain={res_a['sched_diff_pp']} pp -> ratio={res_a['ratio_point']}x [95% CI: {res_a['bootstrap_ci95_lower']}, {res_a['bootstrap_ci95_upper']}]"
+        )
+        print(
+            f"      vs 4-seed mean: gain={res_b['sched_diff_pp']} pp -> ratio={res_b['ratio_point']}x [95% CI: {res_b['bootstrap_ci95_lower']}, {res_b['bootstrap_ci95_upper']}]"
+        )
+
+    if ratio_rows:
+        ratio_df = pd.DataFrame(ratio_rows)
+        ratio_csv = results_dir / f"schedule_ratios_{split_name}.csv"
+        ratio_df.to_csv(ratio_csv, index=False)
+        print(f"[SUCCESS] Wrote schedule effect ratios to: {ratio_csv}")
 
     out_df = pd.DataFrame(stat_rows)
     out_csv = results_dir / f"stats_{split_name}.csv"

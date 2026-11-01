@@ -31,6 +31,7 @@ from scripts.revision.config import (  # noqa: E402
     DEFAULT_DATA_YAML,
     DEFAULT_RESULTS_DIR,
     DEFAULT_SMOKE_DIR,
+    init_nms_backend,
     resolve_data_yaml,
 )
 from scripts.revision.stage_corr import run_stage_corr  # noqa: E402
@@ -79,6 +80,16 @@ def parse_args():
     )
     parser.add_argument(
         "--with-mosaic", action="store_true", help="Include priority 2 mosaic runs (close_mosaic=0, 50)"
+    )
+    parser.add_argument(
+        "--no-ep40sgd",
+        action="store_true",
+        help="Exclude control series ep40-sgd (6 runs with optimizer=SGD, lr0=0.01)",
+    )
+    parser.add_argument(
+        "--repro-check",
+        action="store_true",
+        help="Retrain e5p__baseline-ep40__s0 as e9p__repro-baseline-ep40__s0 and check mAP50 vs 0.7159",
     )
     parser.add_argument(
         "--dry-run", action="store_true", help="Display execution plan and time estimates without executing"
@@ -143,6 +154,10 @@ names:
 def main():
     args = parse_args()
 
+    # Initialize NMS backend (validates torchvision in production mode, enables pure-torch fallback in smoke mode)
+    if not args.dry_run or args.smoke:
+        init_nms_backend(smoke=args.smoke)
+
     # Determine results directory
     results_dir = DEFAULT_SMOKE_DIR if args.smoke else DEFAULT_RESULTS_DIR
     results_dir.mkdir(parents=True, exist_ok=True)
@@ -201,6 +216,8 @@ def main():
                 data_yaml=data_yaml,
                 device=device,
                 with_mosaic=args.with_mosaic,
+                with_ep40sgd=not args.no_ep40sgd,
+                repro_check=args.repro_check,
                 dry_run=args.dry_run,
                 smoke=args.smoke,
                 force=args.force,
@@ -212,6 +229,8 @@ def main():
                 data_yaml=data_yaml,
                 device=device,
                 with_mosaic=args.with_mosaic,
+                with_ep40sgd=not args.no_ep40sgd,
+                repro_check=args.repro_check,
                 dry_run=args.dry_run,
                 smoke=args.smoke,
                 force=args.force,

@@ -11,20 +11,29 @@ Evaluates ALL model checkpoints (old runs + new training runs) using a single st
 import argparse
 import csv
 from pathlib import Path
+import sys
 from typing import Dict, List, Tuple
 
 import torch
 
-from scripts.revision.config import (
+# Ensure repo root is in sys.path when executed directly
+REPO_ROOT_PATH = Path(__file__).resolve().parents[2]
+if str(REPO_ROOT_PATH) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT_PATH))
+
+from scripts.revision.config import (  # noqa: E402
+    CONTROL_EP40_SGD_RUNS,
     DEFAULT_DATA_YAML,
     DEFAULT_RESULTS_DIR,
     EXISTING_RUN_SPECS,
     MANDATORY_NEW_RUNS,
     MOSAIC_PRIORITY2_RUNS,
     REPO_ROOT,
+    REPRO_CHECK_RUN,
     VAL_PARAMS_DICT,
     VAL_PROTOCOL_NAME,
     compute_file_md5,
+    init_nms_backend,
     resolve_checkpoint,
     resolve_data_yaml,
 )
@@ -188,11 +197,15 @@ def run_stage_eval(
     data_yaml: Path,
     device: str = "0",
     with_mosaic: bool = False,
+    with_ep40sgd: bool = True,
+    repro_check: bool = False,
     dry_run: bool = False,
     smoke: bool = False,
     force: bool = False,
 ) -> Path:
     """Execute unified validation across all runs for both val and test splits."""
+    if not dry_run:
+        init_nms_backend(smoke=smoke)
     results_dir.mkdir(parents=True, exist_ok=True)
     out_csv = results_dir / "metrics_all.csv"
 
@@ -209,11 +222,15 @@ def run_stage_eval(
     print(f"[OUTPUT]   {out_csv}")
     print("=" * 80 + "\n")
 
-    # Combine run pools: existing + mandatory + mosaic (if enabled)
+    # Combine run pools: existing + mandatory + ep40sgd + mosaic (if enabled) + repro
     all_runs: List[Dict] = list(EXISTING_RUN_SPECS)
     all_runs.extend(MANDATORY_NEW_RUNS)
+    if with_ep40sgd:
+        all_runs.extend(CONTROL_EP40_SGD_RUNS)
     if with_mosaic:
         all_runs.extend(MOSAIC_PRIORITY2_RUNS)
+    if repro_check:
+        all_runs.append(REPRO_CHECK_RUN)
 
     # Load cached historical results
     hist_cache = load_historical_metrics_cache()
@@ -369,6 +386,32 @@ def run_stage_eval(
         writer.writerows(output_rows)
 
     print(f"\n[SUCCESS] Unified evaluation complete. Wrote {len(output_rows)} entries to: {out_csv}\n")
+
+    # Reproducibility check if requested
+    if repro_check:
+        repro_val = next(
+            (r for r in output_rows if r.get("run") == "e9p__repro-baseline-ep40__s0" and r.get("split") == "val"),
+            None,
+        )
+        if repro_val:
+            try:
+                m_val = float(repro_val.get("mAP50", 0.0))
+                target = float(REPRO_CHECK_RUN["target_mAP50"])
+                diff_pp = (m_val - target) * 100.0
+                tol_pp = float(REPRO_CHECK_RUN["tolerance"]) * 100.0
+                status_repro = "PASS" if abs(diff_pp) <= tol_pp else "DISCREPANCY"
+                print("=" * 80)
+                print(f"  REPRODUCIBILITY CHECK ({status_repro})")
+                print("=" * 80)
+                print("  Run         : e9p__repro-baseline-ep40__s0")
+                print(f"  Observed mAP: {m_val:.4f} ({m_val*100:.2f}%)")
+                print(f"  Target mAP  : {target:.4f} ({target*100:.2f}%)")
+                print(f"  Difference  : {diff_pp:+.2f} pp (tolerance: +-0.30 pp)")
+                print(f"  Verdict     : [{'OK' if status_repro == 'PASS' else 'WARN - outside +-0.3pp tolerance'}]")
+                print("=" * 80 + "\n")
+            except Exception as e:
+                print(f"[WARN] Failed to compute reproducibility difference: {e}")
+
     return out_csv
 
 
@@ -377,6 +420,8 @@ if __name__ == "__main__":
     parser.add_argument("--data", default=str(DEFAULT_DATA_YAML), help="Path to dataset yaml")
     parser.add_argument("--device", default="0" if torch.cuda.is_available() else "cpu", help="Device index or 'cpu'")
     parser.add_argument("--with-mosaic", action="store_true", help="Include mosaic runs")
+    parser.add_argument("--no-ep40sgd", action="store_true", help="Exclude control ep40-sgd runs (included by default)")
+    parser.add_argument("--repro-check", action="store_true", help="Evaluate reproducibility check run e9p vs 0.7159")
     parser.add_argument("--dry-run", action="store_true", help="Dry run plan")
     parser.add_argument("--smoke", action="store_true", help="Smoke mode")
     parser.add_argument("--force", action="store_true", help="Force re-evaluation")
@@ -387,6 +432,8 @@ if __name__ == "__main__":
         data_yaml=resolve_data_yaml(args.data),
         device=args.device,
         with_mosaic=args.with_mosaic,
+        with_ep40sgd=not args.no_ep40sgd,
+        repro_check=args.repro_check,
         dry_run=args.dry_run,
         smoke=args.smoke,
         force=args.force,

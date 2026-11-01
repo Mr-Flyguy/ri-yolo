@@ -9,17 +9,27 @@ Includes strict idempotency, resume capability, and dry-run time estimation.
 
 import argparse
 from pathlib import Path
+import sys
 import time
 from typing import Dict, List, Optional
 
 import torch
 
-from scripts.revision.config import (
+# Ensure repo root is in sys.path when executed directly
+REPO_ROOT_PATH = Path(__file__).resolve().parents[2]
+if str(REPO_ROOT_PATH) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT_PATH))
+
+from scripts.revision.config import (  # noqa: E402
+    CONTROL_EP40_SGD_RUNS,
     DEFAULT_DATA_YAML,
+    DEFAULT_SMOKE_DIR,
     HISTORICAL_EPOCH_TIME_SEC,
     MANDATORY_NEW_RUNS,
     MOSAIC_PRIORITY2_RUNS,
     REPO_ROOT,
+    REPRO_CHECK_RUN,
+    init_nms_backend,
     resolve_data_yaml,
 )
 
@@ -56,11 +66,17 @@ def is_run_completed(run_name: str, target_epochs: int, runs_dir: Path = REPO_RO
     return best_pt.is_file()
 
 
-def print_training_plan(runs: List[Dict], runs_dir: Path, with_mosaic: bool = False):
+def print_training_plan(
+    runs: List[Dict],
+    runs_dir: Path,
+    with_mosaic: bool = False,
+    with_ep40sgd: bool = True,
+    repro_check: bool = False,
+):
     """Print training schedule table and estimated time."""
-    print("=" * 80)
-    print("  STAGE TRAIN: REPEATED SCHEDULES EXECUTION PLAN (R1.2)")
-    print("=" * 80)
+    print("=" * 96)
+    print("  STAGE TRAIN: REPEATED SCHEDULES & CONTROL EXECUTION PLAN (R1.2)")
+    print("=" * 96)
 
     total_epochs = 0
     pending_epochs = 0
@@ -74,28 +90,45 @@ def print_training_plan(runs: List[Dict], runs_dir: Path, with_mosaic: bool = Fa
 
         dur_est = estimate_run_duration(r["epochs"])
         status = "[DONE]" if completed else "[PENDING]"
-        rows.append((idx, r["run"], r["family"], r["epochs"], r["close_mosaic"], r["seed"], f"{dur_est} min", status))
+        opt_str = r.get("optimizer", "auto")
+        lr_str = str(r.get("lr0", "auto"))
+        rows.append(
+            (
+                idx,
+                r["run"],
+                r["family"],
+                r["epochs"],
+                opt_str,
+                lr_str,
+                r["close_mosaic"],
+                r["seed"],
+                f"{dur_est} min",
+                status,
+            )
+        )
 
     print(
-        f"{'#':<3} {'Run Name':<28} {'Family':<10} {'Ep':<4} {'CloseMos':<9} {'Seed':<5} {'Est. Time':<11} {'Status':<9}"
+        f"{'#':<3} {'Run Name':<30} {'Family':<9} {'Ep':<4} {'Opt':<7} {'lr0':<9} {'CloseMos':<9} {'Seed':<5} {'Est. Time':<10} {'Status':<8}"
     )
-    print("-" * 80)
+    print("-" * 96)
     for r in rows:
-        print(f"{r[0]:<3} {r[1]:<28} {r[2]:<10} {r[3]:<4} {r[4]:<9} {r[5]:<5} {r[6]:<11} {r[7]:<9}")
+        print(f"{r[0]:<3} {r[1]:<30} {r[2]:<9} {r[3]:<4} {r[4]:<7} {r[5]:<9} {r[6]:<9} {r[7]:<5} {r[8]:<10} {r[9]:<8}")
 
     total_min = round((total_epochs * HISTORICAL_EPOCH_TIME_SEC) / 60.0, 1)
     pending_min = round((pending_epochs * HISTORICAL_EPOCH_TIME_SEC) / 60.0, 1)
     total_hr = round(total_min / 60.0, 2)
     pending_hr = round(pending_min / 60.0, 2)
 
-    print("-" * 80)
+    print("-" * 96)
     print(
         f"Total runs: {len(runs)} ({len(MANDATORY_NEW_RUNS)} mandatory, "
-        f"{len(MOSAIC_PRIORITY2_RUNS) if with_mosaic else 0} mosaic)"
+        f"{len(CONTROL_EP40_SGD_RUNS) if with_ep40sgd else 0} ep40-sgd control, "
+        f"{len(MOSAIC_PRIORITY2_RUNS) if with_mosaic else 0} mosaic, "
+        f"{1 if repro_check else 0} repro-check)"
     )
     print(f"Total workload   : {total_epochs} epochs (~{total_hr} hours @ {HISTORICAL_EPOCH_TIME_SEC}s/epoch)")
     print(f"Remaining work   : {pending_epochs} epochs (~{pending_hr} hours)")
-    print("=" * 80 + "\n")
+    print("=" * 96 + "\n")
 
 
 def execute_single_run(
@@ -183,6 +216,11 @@ def execute_single_run(
         "device": device,
     }
 
+    if exp_info.get("optimizer"):
+        train_kwargs["optimizer"] = exp_info["optimizer"]
+    if exp_info.get("lr0"):
+        train_kwargs["lr0"] = exp_info["lr0"]
+
     if smoke:
         train_kwargs["fraction"] = 0.02
 
@@ -198,27 +236,40 @@ def run_stage_train(
     data_yaml: Path,
     device: str = "0",
     with_mosaic: bool = False,
+    with_ep40sgd: bool = True,
+    repro_check: bool = False,
     dry_run: bool = False,
     smoke: bool = False,
     force: bool = False,
     runs_dir: Optional[Path] = None,
 ):
     """Orchestrate training of all new revision schedules."""
+    if not dry_run or smoke:
+        init_nms_backend(smoke=smoke)
+
     if runs_dir is None:
-        runs_dir = (
-            REPO_ROOT / "results" / "revision" / "smoke" / "runs" if smoke else REPO_ROOT / "runs" / "detect" / "runs"
-        )
+        runs_dir = DEFAULT_SMOKE_DIR / "runs" if smoke else REPO_ROOT / "runs" / "detect" / "runs"
 
     runs_dir.mkdir(parents=True, exist_ok=True)
 
     scheduled_runs = list(MANDATORY_NEW_RUNS)
+    if with_ep40sgd:
+        scheduled_runs.extend(CONTROL_EP40_SGD_RUNS)
     if with_mosaic:
         scheduled_runs.extend(MOSAIC_PRIORITY2_RUNS)
+    if repro_check:
+        scheduled_runs.append(REPRO_CHECK_RUN)
     if smoke:
         scheduled_runs = scheduled_runs[:1]
 
     # Always print plan first
-    print_training_plan(scheduled_runs, runs_dir, with_mosaic=with_mosaic)
+    print_training_plan(
+        scheduled_runs,
+        runs_dir,
+        with_mosaic=with_mosaic,
+        with_ep40sgd=with_ep40sgd,
+        repro_check=repro_check,
+    )
 
     if dry_run:
         print("[DRY-RUN] Execution plan displayed. Skipping model training as requested.")
@@ -243,6 +294,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--with-mosaic", action="store_true", help="Include priority 2 mosaic runs (close_mosaic=0, 50)"
     )
+    parser.add_argument(
+        "--no-ep40sgd", action="store_true", help="Disable control series ep40-sgd (enabled by default)"
+    )
+    parser.add_argument(
+        "--repro-check", action="store_true", help="Retrain e5p__baseline-ep40__s0 as e9p to check reproducibility"
+    )
     parser.add_argument("--dry-run", action="store_true", help="Print plan and estimated time without training")
     parser.add_argument("--smoke", action="store_true", help="Smoke test on tiny dataset/CPU")
     parser.add_argument("--force", action="store_true", help="Force re-train already completed runs")
@@ -252,6 +309,8 @@ if __name__ == "__main__":
         data_yaml=resolve_data_yaml(args.data),
         device=args.device,
         with_mosaic=args.with_mosaic,
+        with_ep40sgd=not args.no_ep40sgd,
+        repro_check=args.repro_check,
         dry_run=args.dry_run,
         smoke=args.smoke,
         force=args.force,

@@ -14,6 +14,7 @@ import csv
 import glob
 import os
 from pathlib import Path
+import sys
 from typing import Dict, List, Optional, Tuple
 
 import cv2
@@ -23,7 +24,12 @@ from scipy.stats import pearsonr, spearmanr, t as t_dist
 import torch
 import yaml
 
-from scripts.revision.config import (
+# Ensure repo root is in sys.path when executed directly
+REPO_ROOT_PATH = Path(__file__).resolve().parents[2]
+if str(REPO_ROOT_PATH) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT_PATH))
+
+from scripts.revision.config import (  # noqa: E402
     DEFAULT_DATA_YAML,
     DEFAULT_RESULTS_DIR,
     DIAG_IMAGE_LIST,

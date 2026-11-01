@@ -15,6 +15,7 @@ Inference-only stress test:
 import argparse
 import csv
 from pathlib import Path
+import sys
 from typing import Dict
 
 import cv2
@@ -23,14 +24,19 @@ import numpy as np
 from scipy.stats import pearsonr, spearmanr
 import torch
 
-from scripts.revision.config import (
+# Ensure repo root is in sys.path when executed directly
+REPO_ROOT_PATH = Path(__file__).resolve().parents[2]
+if str(REPO_ROOT_PATH) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT_PATH))
+
+from scripts.revision.config import (  # noqa: E402
     DEFAULT_DATA_YAML,
     DEFAULT_RESULTS_DIR,
     EXISTING_RUN_SPECS,
     resolve_checkpoint,
     resolve_data_yaml,
 )
-from scripts.revision.stage_corr import calc_stats_and_ci, resolve_image_list
+from scripts.revision.stage_corr import calc_stats_and_ci, resolve_image_list  # noqa: E402
 
 
 def create_synthetic_fields(height: int = 640, width: int = 640) -> Dict[str, np.ndarray]:
