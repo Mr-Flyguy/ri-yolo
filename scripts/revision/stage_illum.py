@@ -35,6 +35,7 @@ from scripts.revision.config import (  # noqa: E402
     EXISTING_RUN_SPECS,
     resolve_checkpoint,
     resolve_data_yaml,
+    select_torch_device,
 )
 from scripts.revision.stage_corr import calc_stats_and_ci, resolve_image_list  # noqa: E402
 
@@ -96,6 +97,8 @@ def run_stage_illum(
     print("=" * 80)
     print("  STAGE ILLUM: SYNTHETIC ILLUMINATION EXPERIMENT (R1.3)")
     print("=" * 80)
+
+    torch_device = select_torch_device(device)
 
     images = resolve_image_list(data_yaml, n_max=5 if smoke else 300)
     if not images:
@@ -166,7 +169,7 @@ def run_stage_illum(
         # Live model inference
         print(f"\n[ILLUM] Running live inference for: {run_name}")
         model_wrapper = YOLO(str(ckpt))
-        model = model_wrapper.model.eval().to(device)
+        model = model_wrapper.model.eval().to(torch_device)
 
         rfd_modules = [m for m in model.modules() if m.__class__.__name__ == "RFDBlock"]
         if not rfd_modules:
@@ -188,7 +191,7 @@ def run_stage_illum(
             img_resized = cv2.resize(img_rgb, (640, 640))
 
             # Original forward pass
-            x_orig = torch.from_numpy(img_resized).permute(2, 0, 1)[None].float().to(device)
+            x_orig = torch.from_numpy(img_resized).permute(2, 0, 1)[None].float().to(torch_device)
             with torch.no_grad():
                 model(x_orig)
             L_orig = buf["L"][0, 0].float().cpu().numpy()
@@ -196,7 +199,7 @@ def run_stage_illum(
             # Modulate with each field
             for f_name, f_arr in fields.items():
                 img_mod = apply_illumination_linear_rgb(img_resized, f_arr)
-                x_mod = torch.from_numpy(img_mod).permute(2, 0, 1)[None].float().to(device)
+                x_mod = torch.from_numpy(img_mod).permute(2, 0, 1)[None].float().to(torch_device)
 
                 with torch.no_grad():
                     model(x_mod)

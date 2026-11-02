@@ -309,7 +309,9 @@ def main():
     print("=" * 80 + "\n")
 
     stages_to_run = (
-        ["info", "train", "eval", "corr", "illum", "stats", "report"] if args.stage == "all" else [args.stage]
+        ["info", "train", "eval", "corr", "illum", "stats", "report"]
+        if args.stage == "all"
+        else [s.strip() for s in args.stage.split(",") if s.strip()]
     )
 
     for st in stages_to_run:

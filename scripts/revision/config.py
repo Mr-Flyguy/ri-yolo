@@ -5,7 +5,7 @@ import hashlib
 from pathlib import Path
 import sys
 import types
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 import torch
 
 TORCH_VERSION = str(getattr(torch, "__version__", "unknown"))
@@ -79,6 +79,23 @@ def init_nms_backend(smoke: bool = False) -> str:
                 "or pass --smoke for CPU testing.\n"
                 f"{'='*80}\n"
             )
+
+
+def select_torch_device(device: Union[str, int, torch.device] = "0") -> torch.device:
+    """Parse device string/int to a valid torch.device object."""
+    if isinstance(device, torch.device):
+        return device
+    dev_str = str(device).strip()
+    if dev_str.isdigit():
+        return torch.device(f"cuda:{dev_str}" if torch.cuda.is_available() else "cpu")
+    if dev_str.lower() in ("cuda", "gpu"):
+        return torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    if dev_str.lower() == "cpu":
+        return torch.device("cpu")
+    try:
+        return torch.device(dev_str)
+    except Exception:
+        return torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
 # Base filesystem directories

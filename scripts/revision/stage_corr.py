@@ -38,6 +38,7 @@ from scripts.revision.config import (  # noqa: E402
     compute_file_md5,
     resolve_checkpoint,
     resolve_data_yaml,
+    select_torch_device,
 )
 
 # Runs with RFD illumination map
@@ -184,6 +185,8 @@ def run_stage_corr(
     print("  STAGE CORR: ILLUMINATION MAP CORRELATION RECALCULATION (R1.3)")
     print("=" * 80)
 
+    torch_device = select_torch_device(device)
+
     # 1. Images
     images_300 = resolve_image_list(data_yaml, n_max=5 if smoke else 300)
     images_all = images_300 if smoke else resolve_image_list(data_yaml, n_max=None)
@@ -274,7 +277,7 @@ def run_stage_corr(
         # Live model diagnostic
         print(f"\n[DIAG] Evaluating illumination maps for: {run_name}")
         model_wrapper = YOLO(str(ckpt))
-        model = model_wrapper.model.eval().to(device)
+        model = model_wrapper.model.eval().to(torch_device)
 
         rfd_modules = [m for m in model.modules() if m.__class__.__name__ == "RFDBlock"]
         if not rfd_modules:
@@ -296,7 +299,7 @@ def run_stage_corr(
                     continue
                 img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB).astype(np.float32) / 255.0
                 img_resized = cv2.resize(img_rgb, (640, 640))
-                x = torch.from_numpy(img_resized).permute(2, 0, 1)[None].float().to(device)
+                x = torch.from_numpy(img_resized).permute(2, 0, 1)[None].float().to(torch_device)
 
                 with torch.no_grad():
                     model(x)
