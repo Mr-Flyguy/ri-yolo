@@ -266,10 +266,12 @@ def run_stage_eval(
         for split in splits_to_eval:
             key = (run_name, split)
 
-            # Check if already evaluated in this output file
+            # Check if already evaluated with valid metrics in this output file
             if not force and key in existing_rows:
-                output_rows.append(existing_rows[key])
-                continue
+                existing_val = existing_rows[key].get("mAP50")
+                if existing_val not in ("NA", "", None) and str(existing_val).lower() != "nan":
+                    output_rows.append(existing_rows[key])
+                    continue
 
             # In dry-run mode
             if dry_run:

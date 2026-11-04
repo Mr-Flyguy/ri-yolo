@@ -7,6 +7,7 @@ summaries, ExDark split composition, and diagnostic methodology documentation.
 
 import csv
 import json
+import math
 from pathlib import Path
 import platform
 import shutil
@@ -90,9 +91,12 @@ def get_environment_info() -> Dict[str, str]:
     }
 
 
-def analyze_optimizer_and_lr(epochs: int, batch: int = 16, num_train_images: int = 2950) -> Dict[str, str]:
+def analyze_optimizer_and_lr(
+    epochs: int, batch: int = 16, num_train_images: int = 2950, nbs: int = 64
+) -> Dict[str, str]:
     """Deduce actual optimizer and scheduler behavior in Ultralytics YOLOv8 when optimizer='auto'."""
-    iterations = (num_train_images // batch) * epochs
+    # Matches trainer.py line 312: math.ceil(len(dataset) / max(batch, nbs)) * epochs
+    iterations = math.ceil(num_train_images / max(batch, nbs)) * epochs
     # Ultralytics threshold in build_optimizer: iterations > 10000 -> MuSGD, else AdamW
     if iterations > 10000:
         opt_name = "MuSGD"
