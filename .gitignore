@@ -156,6 +156,7 @@ results/revision/smoke/
 results/revision/dummy_images/
 results/revision/logs/
 results/revision/*.zip
+*.zip
 !results/revision/*.md
 !results/revision/*.csv
 !results/revision/figures/
