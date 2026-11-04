@@ -149,7 +149,17 @@ dmypy.json
 
 # datasets and projects (ignore /datasets dir at root only to allow for docs/en/datasets dir)
 /datasets
-/results/
+/results/*
+!results/revision/
+results/revision/runs/
+results/revision/smoke/
+results/revision/dummy_images/
+results/revision/logs/
+results/revision/*.zip
+!results/revision/*.md
+!results/revision/*.csv
+!results/revision/figures/
+!results/revision/info/
 /scratch/
 runs/*
 !runs/*/
