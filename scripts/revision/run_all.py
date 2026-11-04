@@ -75,9 +75,8 @@ def parse_args():
     parser = argparse.ArgumentParser(description="PIERE-2026 Revision Master Runner")
     parser.add_argument(
         "--stage",
-        choices=["info", "train", "eval", "corr", "illum", "stats", "report", "all"],
         default="all",
-        help="Stage to execute (default: all)",
+        help="Stage to execute: 'all', single stage, or comma-separated list (e.g. 'eval,stats,report')",
     )
     parser.add_argument("--data", default=str(DEFAULT_DATA_YAML), help="Path to dataset YAML file")
     parser.add_argument(
@@ -284,7 +283,8 @@ def main():
             data_yaml = DEFAULT_DATA_YAML
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    master_log = logs_dir / f"master_{args.stage}_{timestamp}.log"
+    safe_stage_name = args.stage.replace(",", "_")
+    master_log = logs_dir / f"master_{safe_stage_name}_{timestamp}.log"
     tee = TeeLogger(master_log)
     sys.stdout = tee
     sys.stderr = tee
