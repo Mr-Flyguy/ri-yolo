@@ -1,0 +1,42 @@
+{
+  "val": {
+    "images": 1800,
+    "total_objects": 5704,
+    "small": 263,
+    "medium": 1955,
+    "large": 3486,
+    "small_pct": 4.61,
+    "medium_pct": 34.27,
+    "large_pct": 61.12
+  },
+  "train": {
+    "images": 3000,
+    "total_objects": 9731,
+    "small": 299,
+    "medium": 3376,
+    "large": 6056,
+    "small_pct": 3.07,
+    "medium_pct": 34.69,
+    "large_pct": 62.23
+  },
+  "test": {
+    "images": 2563,
+    "total_objects": 8275,
+    "small": 246,
+    "medium": 2903,
+    "large": 5126,
+    "small_pct": 2.97,
+    "medium_pct": 35.08,
+    "large_pct": 61.95
+  },
+  "combined": {
+    "images": 7278,
+    "total_objects": 23710,
+    "small": 808,
+    "medium": 8234,
+    "large": 14668,
+    "small_pct": 3.41,
+    "medium_pct": 34.73,
+    "large_pct": 61.86
+  }
+}

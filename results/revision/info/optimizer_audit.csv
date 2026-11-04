@@ -1,0 +1,18 @@
+run,epochs,total_iters,optimizer,lr0,momentum,warmup_bias_lr,first_lr_pg0,last_lr_pg0,evidence_type,source
+e2p__baseline__s0,100,4700,AdamW,0.000625,0.9,0.0,0.000207,1.24e-05,factual_lr_curves,Factual data: artifacts/phase0/curves_comparison.csv (run=1_baseline_yolov8s); pg0=pg1=pg2 starting at 0.000207 (peak ~0.000625) -> AdamW
+e2p__baseline__s1,100,4700,AdamW,0.000625,0.9,0.0,0.000207,1.24e-05,factual_lr_curves,Factual data: runs\detect\runs\e2p__baseline__s1\results.csv; pg0=pg1=pg2 starting at 0.000207 (peak ~0.000625) -> AdamW
+e2p__baseline__s2,100,4700,AdamW,0.000625,0.9,0.0,0.000207,1.24e-05,factual_lr_curves,Factual data: runs\detect\runs\e2p__baseline__s2\results.csv; pg0=pg1=pg2 starting at 0.000207 (peak ~0.000625) -> AdamW
+e2p__baseline__s3,100,4700,AdamW,0.000625,0.9,0.0,0.000207,1.24e-05,factual_lr_curves,Factual data: runs\detect\runs\e2p__baseline__s3\results.csv; pg0=pg1=pg2 starting at 0.000207 (peak ~0.000625) -> AdamW
+e2p__postsppf__s0,100,4700,AdamW,0.000625,0.9,0.0,0.000207,1.24e-05,factual_lr_curves,Factual data: artifacts/phase0/curves_comparison.csv (run=2_yolov8s_rfd); pg0=pg1=pg2 starting at 0.000207 (peak ~0.000625) -> AdamW
+e2p__postsppf__s1,100,4700,AdamW,0.000625,0.9,0.0,0.000207,1.24e-05,factual_lr_curves,Factual data: runs\detect\runs\e2p__postsppf__s1\results.csv; pg0=pg1=pg2 starting at 0.000207 (peak ~0.000625) -> AdamW
+e2p__postsppf__s2,100,4700,AdamW,0.000625,0.9,0.0,0.000207,1.24e-05,factual_lr_curves,Factual data: runs\detect\runs\e2p__postsppf__s2\results.csv; pg0=pg1=pg2 starting at 0.000207 (peak ~0.000625) -> AdamW
+e2p__postsppf__s3,100,4700,AdamW,0.000625,0.9,0.0,0.000207,1.24e-05,factual_lr_curves,Factual data: runs\detect\runs\e2p__postsppf__s3\results.csv; pg0=pg1=pg2 starting at 0.000207 (peak ~0.000625) -> AdamW
+e3p__capctrl__s0,100,4700,AdamW,0.000625,0.9,0.0,0.000207,1.24e-05,factual_lr_curves,Factual data: runs\detect\runs\e3p__capctrl__s0\results.csv; pg0=pg1=pg2 starting at 0.000207 (peak ~0.000625) -> AdamW
+e3p__capctrl__s1,100,4700,AdamW,0.000625,0.9,0.0,0.000207,1.24e-05,factual_lr_curves,Factual data: runs\detect\runs\e3p__capctrl__s1\results.csv; pg0=pg1=pg2 starting at 0.000207 (peak ~0.000625) -> AdamW
+e3p__capctrl__s2,100,4700,AdamW,0.000625,0.9,0.0,0.000207,1.24e-05,factual_lr_curves,Factual data: runs\detect\runs\e3p__capctrl__s2\results.csv; pg0=pg1=pg2 starting at 0.000207 (peak ~0.000625) -> AdamW
+e5p__baseline-ep40__s0,40,1880,AdamW,0.000625,0.9,0.0,0.000207,2.17e-05,factual_lr_curves,Factual data: runs\detect\runs\e5p__baseline-ep40__s0\results.csv; pg0=pg1=pg2 starting at 0.000207 (peak ~0.000625) -> AdamW
+e5p__postsppf-ep40__s0,40,1880,AdamW,0.000625,0.9,0.0,0.000207,2.17e-05,factual_lr_curves,Factual data: runs\detect\runs\e5p__postsppf-ep40__s0\results.csv; pg0=pg1=pg2 starting at 0.000207 (peak ~0.000625) -> AdamW
+e5p__baseline-ep60__s0,60,2820,AdamW,0.000625,0.9,0.0,0.000207,1.66e-05,factual_lr_curves,Factual data: runs\detect\runs\e5p__baseline-ep60__s0\results.csv; pg0=pg1=pg2 starting at 0.000207 (peak ~0.000625) -> AdamW
+e5p__postsppf-ep60__s0,60,2820,AdamW,0.000625,0.9,0.0,0.000207,1.66e-05,factual_lr_curves,Factual data: runs\detect\runs\e5p__postsppf-ep60__s0\results.csv; pg0=pg1=pg2 starting at 0.000207 (peak ~0.000625) -> AdamW
+e4p__mosaic-close0__s0,100,4700,AdamW,0.000625,0.9,0.0,0.000207,1.24e-05,factual_lr_curves,Factual data: runs\detect\runs\e4p__mosaic-close0__s0\results.csv; pg0=pg1=pg2 starting at 0.000207 (peak ~0.000625) -> AdamW
+e4p__mosaic-close50__s0,100,4700,AdamW,0.000625,0.9,0.0,0.000207,1.24e-05,factual_lr_curves,Factual data: runs\detect\runs\e4p__mosaic-close50__s0\results.csv; pg0=pg1=pg2 starting at 0.000207 (peak ~0.000625) -> AdamW

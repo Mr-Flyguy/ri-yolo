@@ -1,0 +1,9 @@
+split,series,baseline_ref_type,baseline_ref_val,sched_mean,sched_gain_pp,mod_gain_pp,ratio_point,bootstrap_ci95_lower,bootstrap_ci95_upper
+val,base_ep40_auto,seed_0 (paper),0.6816,0.7159,3.43,0.59,5.81,NA,NA
+val,base_ep40_auto,4seed_mean,0.6818,0.7159,3.41,0.59,5.78,NA,NA
+val,base_ep60_sgd,seed_0 (paper),0.6816,0.6968,1.52,0.59,2.58,NA,NA
+val,base_ep60_sgd,4seed_mean,0.6818,0.6968,1.5,0.59,2.54,NA,NA
+val,module_ep40_auto,seed_0 (paper),0.6816,0.7102,2.86,0.59,4.85,NA,NA
+val,module_ep40_auto,4seed_mean,0.6818,0.7102,2.84,0.59,4.81,NA,NA
+val,module_ep60_sgd,seed_0 (paper),0.6816,0.7035,2.19,0.59,3.71,NA,NA
+val,module_ep60_sgd,4seed_mean,0.6818,0.7035,2.17,0.59,3.68,NA,NA

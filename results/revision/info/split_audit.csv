@@ -1,0 +1,4 @@
+split,images_total,images_with_objects,background_images,corrupt_images,objects
+train,3000,3000,0,0,9731
+val,1800,1800,0,0,5704
+test,2563,2562,1,0,8275

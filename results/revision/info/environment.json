@@ -1,0 +1,12 @@
+{
+  "python": "3.11.9",
+  "torch": "2.5.1+cu121",
+  "torchvision": "unavailable",
+  "nms_backend": "torchvision",
+  "cuda": "12.1",
+  "cudnn": "90100",
+  "ultralytics": "8.4.146",
+  "gpu": "NVIDIA GeForce RTX 3070 Ti",
+  "git_commit": "74a3f7b9b38bea94b7bfddc984a6bcbd172acfb6",
+  "os": "Windows 10"
+}

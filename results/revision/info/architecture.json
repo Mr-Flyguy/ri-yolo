@@ -1,0 +1,21 @@
+{
+  "module_class": "RFDBlock",
+  "control_class": "RFDBlockNoGate",
+  "yaml_layer_index": 10,
+  "input_layer": "SPPF (layer 9, P5/32)",
+  "input_channels": 512,
+  "output_channels": 512,
+  "stride": 32,
+  "map_resolution_at_640": [
+    20,
+    20
+  ],
+  "rfd_total_params": 2624513,
+  "capctrl_total_params": 2624001,
+  "estimator_params": 512,
+  "baseline_model_params_M": 11.167,
+  "postsppf_model_params_M": 13.791,
+  "capctrl_model_params_M": 13.79,
+  "baseline_gflops": 28.81,
+  "postsppf_gflops": 30.91
+}
