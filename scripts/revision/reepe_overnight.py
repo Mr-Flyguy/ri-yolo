@@ -203,13 +203,13 @@ def stage_ablation(runs, data_yaml, device):
                 )
 
 
-def map_stats(run, ckpt, data_yaml, device):
+def map_stats(run, ckpt, data_yaml, device, out_path=None):
     """Compute illumination map statistics on the fixed 300-image diagnostic list."""
     from ultralytics import YOLO
 
-    path = OUT / "map_stats.csv"
-    if (run,) in done_keys(path, ["run"]):
-        return
+    path = Path(out_path) if out_path is not None else OUT / "map_stats.csv"
+    if out_path is None and (run,) in done_keys(path, ["run"]):
+        return None, []
 
     dev_str = (
         f"cuda:{device}"
@@ -243,7 +243,7 @@ def map_stats(run, ckpt, data_yaml, device):
 
     if not rs:
         log(f"[WARN] No valid images processed for map_stats on {run}")
-        return
+        return None, []
 
     row = {
         "run": run,
@@ -256,6 +256,7 @@ def map_stats(run, ckpt, data_yaml, device):
     }
     append_row(path, row)
     log(f"[C] map stats {row}")
+    return row, rs
 
 
 def stage_train_new(data_yaml, device, seeds=(1, 2)):
