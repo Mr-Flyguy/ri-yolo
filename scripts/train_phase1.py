@@ -8,7 +8,6 @@ Executes controlled runs for Article C1 (RSCI):
 
 import argparse
 import csv
-import os
 import sys
 from pathlib import Path
 
@@ -17,9 +16,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from scripts.rfd_callbacks import add_rfd_logging
-
 from ultralytics import YOLO
-
 
 # Complete Phase 1 experiment catalog
 PHASE1_EXPERIMENTS = {
@@ -54,7 +51,6 @@ PHASE1_EXPERIMENTS = {
         "seed": 0,
         "desc": "Capacity control module (RFDBlockNoGate, constant 0.5 gate)",
     },
-
     # --- E2' Multi-Seed Validation ---
     "e2p__baseline__s1": {
         "group": "E2",
@@ -128,7 +124,7 @@ def train_single_run(run_name, exp_info, args):
         with open(results_csv) as f:
             lines = [line.strip() for line in f if line.strip()]
         if len(lines) >= args.epochs + 1:  # header + epochs
-            print(f"[SKIP] Run {run_name} already completed ({len(lines)-1} epochs found).")
+            print(f"[SKIP] Run {run_name} already completed ({len(lines) - 1} epochs found).")
             return
 
     # Check for resume
@@ -150,6 +146,7 @@ def train_single_run(run_name, exp_info, args):
         model.load(args.weights)
     elif args.weights:
         from ultralytics.utils.downloads import attempt_download_asset
+
         attempt_download_asset(args.weights)
         if Path(args.weights).exists():
             print(f"[INFO] Transferring weights from downloaded {args.weights}...")
@@ -178,7 +175,7 @@ def train_single_run(run_name, exp_info, args):
     # Post-training summary logging
     summary_path = Path("artifacts/phase1/summary.csv")
     summary_path.parent.mkdir(parents=True, exist_ok=True)
-    is_new = not summary_path.exists()
+    not summary_path.exists()
 
     # Extract metrics
     map50 = 0.0
@@ -194,10 +191,9 @@ def train_single_run(run_name, exp_info, args):
     # Extract final gamma if present
     gamma_val = "NA"
     for m in model.model.modules():
-        if m.__class__.__name__ in ("RFDBlock", "RFDBlockNoGate"):
-            if hasattr(m, "gamma"):
-                gamma_val = f"{float(m.gamma.detach().cpu().reshape(-1)[0]):+.6f}"
-                break
+        if m.__class__.__name__ in ("RFDBlock", "RFDBlockNoGate") and hasattr(m, "gamma"):
+            gamma_val = f"{float(m.gamma.detach().cpu().reshape(-1)[0]):+.6f}"
+            break
 
     row = {
         "run": run_name,
@@ -213,7 +209,7 @@ def train_single_run(run_name, exp_info, args):
     # Update or append row in summary.csv (prevents duplicate entries from smoke tests)
     existing_rows = []
     if summary_path.exists():
-        with open(summary_path, "r", newline="") as f:
+        with open(summary_path, newline="") as f:
             reader = csv.DictReader(f)
             existing_rows = [r for r in reader if r.get("run") != run_name]
     existing_rows.append(row)

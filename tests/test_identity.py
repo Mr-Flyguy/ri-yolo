@@ -7,7 +7,9 @@ predictions when gamma parameter is zero, confirming correct weight transfer and
 
 import argparse
 import sys
+
 import torch
+
 from ultralytics import YOLO
 
 CFGS = [
@@ -20,8 +22,10 @@ CFGS = [
 
 try:
     import pytest
+
     _parametrize = pytest.mark.parametrize("cfg", CFGS)
 except ImportError:
+
     def _parametrize(fn):
         return fn
 

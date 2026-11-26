@@ -8,7 +8,6 @@ Executes controlled runs for Article C2 (VAK / RSCI):
 
 import argparse
 import csv
-import os
 import sys
 from pathlib import Path
 
@@ -66,7 +65,6 @@ PHASE2_EXPERIMENTS = {
             "use_nwd": False,
         },
     },
-
     # --- E7' Bounding Box Metric Formulations (seed 0, 100 epochs) ---
     "e7p__nwd-calib__s0": {
         "group": "E7",
@@ -140,7 +138,7 @@ def parse_args():
 
 
 def run_experiment(run_name: str, exp_info: dict, args):
-    print(f"\n{'='*70}")
+    print(f"\n{'=' * 70}")
     print(f"[START] Running Phase 2 Experiment: {run_name}")
     print(f"Group:       {exp_info['group']}")
     print(f"Description: {exp_info['desc']}")
@@ -148,7 +146,7 @@ def run_experiment(run_name: str, exp_info: dict, args):
     print(f"Overrides:   {exp_info.get('hyp_overrides', {})}")
     print(f"Seed:        {exp_info['seed']}")
     print(f"Epochs:      {args.epochs}")
-    print(f"{'='*70}\n")
+    print(f"{'=' * 70}\n")
 
     # Initialize model
     model = YOLO(exp_info["cfg"])
@@ -160,6 +158,7 @@ def run_experiment(run_name: str, exp_info: dict, args):
         model.load(args.weights)
     elif args.weights:
         from ultralytics.utils.downloads import attempt_download_asset
+
         attempt_download_asset(args.weights)
         if Path(args.weights).exists():
             print(f"[INFO] Transferring weights from downloaded {args.weights}...")
@@ -196,18 +195,26 @@ def run_experiment(run_name: str, exp_info: dict, args):
                 summary_p = Path("artifacts/phase2/summary.csv")
                 if summary_p.exists():
                     try:
-                        with open(summary_p, "r") as sf:
-                            e6_rows = [r for r in csv.DictReader(sf) if r.get("group") == "E6" and r.get("lambda_tv") not in ("NA", "")]
+                        with open(summary_p) as sf:
+                            e6_rows = [
+                                r
+                                for r in csv.DictReader(sf)
+                                if r.get("group") == "E6" and r.get("lambda_tv") not in ("NA", "")
+                            ]
                             if e6_rows:
                                 best_e6 = max(e6_rows, key=lambda x: float(x.get("mAP50", 0.0)))
                                 chosen_lambda = float(best_e6["lambda_tv"])
-                                print(f"[INFO] Auto-detected best lambda_tv={chosen_lambda} from E6' ({best_e6['run']}, mAP50={best_e6['mAP50']})")
+                                print(
+                                    f"[INFO] Auto-detected best lambda_tv={chosen_lambda} from E6' ({best_e6['run']}, mAP50={best_e6['mAP50']})"
+                                )
                     except Exception as e:
                         print(f"[WARN] Error reading E6' summary: {e}")
             if chosen_lambda is not None:
                 overrides["lambda_tv"] = chosen_lambda
             else:
-                print(f"[WARN] No E6' results found and --lambda_tv not set. Falling back to default lambda_tv=0.001 for {run_name}")
+                print(
+                    f"[WARN] No E6' results found and --lambda_tv not set. Falling back to default lambda_tv=0.001 for {run_name}"
+                )
         train_kwargs.update(overrides)
 
     # Launch training
@@ -231,17 +238,16 @@ def run_experiment(run_name: str, exp_info: dict, args):
     # Extract final gamma if present
     gamma_val = "NA"
     for m in model.model.modules():
-        if m.__class__.__name__ in ("RFDBlock", "RFDBlockNoGate"):
-            if hasattr(m, "gamma"):
-                gamma_val = f"{float(m.gamma.detach().cpu().reshape(-1)[0]):+.6f}"
-                break
+        if m.__class__.__name__ in ("RFDBlock", "RFDBlockNoGate") and hasattr(m, "gamma"):
+            gamma_val = f"{float(m.gamma.detach().cpu().reshape(-1)[0]):+.6f}"
+            break
 
     # Extract final L_std from rfd_log.csv if available
     l_std_final = "NA"
     rfd_log_file = Path(args.project) / run_name / "rfd_log.csv"
     if rfd_log_file.exists():
         try:
-            with open(rfd_log_file, "r") as rf:
+            with open(rfd_log_file) as rf:
                 r_reader = list(csv.DictReader(rf))
                 if r_reader and "L_std_spatial" in r_reader[-1]:
                     l_std_final = f"{float(r_reader[-1]['L_std_spatial']):.4f}"
@@ -269,7 +275,7 @@ def run_experiment(run_name: str, exp_info: dict, args):
     # Update or append row in summary.csv
     existing_rows = []
     if summary_path.exists():
-        with open(summary_path, "r", newline="") as f:
+        with open(summary_path, newline="") as f:
             reader = csv.DictReader(f)
             existing_rows = [r for r in reader if r.get("run") != run_name]
     existing_rows.append(row)
@@ -279,7 +285,9 @@ def run_experiment(run_name: str, exp_info: dict, args):
         writer.writeheader()
         writer.writerows(existing_rows)
 
-    print(f"[SUCCESS] Completed {run_name}! mAP50: {map50:.4f}, mAP50-95: {map50_95:.4f}, gamma: {gamma_val}, L_std: {l_std_final}")
+    print(
+        f"[SUCCESS] Completed {run_name}! mAP50: {map50:.4f}, mAP50-95: {map50_95:.4f}, gamma: {gamma_val}, L_std: {l_std_final}"
+    )
 
 
 def main():
@@ -293,7 +301,9 @@ def main():
         print("\n[ACTION] Please execute E6' first:")
         print("  python scripts/train_phase2.py --run e6 --data exdark.yaml --device 0 --epochs 100")
         print("\nAfter analyzing E6' results, proceed to E7' with the winning lambda_tv:")
-        print("  python scripts/train_phase2.py --run e7 --lambda_tv <winner> --data exdark.yaml --device 0 --epochs 100")
+        print(
+            "  python scripts/train_phase2.py --run e7 --lambda_tv <winner> --data exdark.yaml --device 0 --epochs 100"
+        )
         sys.exit(1)
     elif target in ("e6", "e6p"):
         selected_runs = [k for k, v in PHASE2_EXPERIMENTS.items() if v["group"] == "E6"]
@@ -303,7 +313,7 @@ def main():
         selected_runs = [target]
     else:
         print(f"[ERROR] Unknown run or group: '{args.run}'.")
-        print(f"Available runs/groups: 'all', 'e6', 'e7', or specific:")
+        print("Available runs/groups: 'all', 'e6', 'e7', or specific:")
         for k in sorted(PHASE2_EXPERIMENTS.keys()):
             print(f"  - {k}")
         sys.exit(1)

@@ -10,19 +10,23 @@ import csv
 import glob
 import os
 from pathlib import Path
+
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.stats import pearsonr, spearmanr
 import torch
 import yaml
+from scipy.stats import pearsonr, spearmanr
+
 from ultralytics import YOLO
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Compute correlation between illumination map L and luminance Y.")
     parser.add_argument("--ckpt", required=True, help="Path to model checkpoint (.pt)")
-    parser.add_argument("--images", required=True, help="Path to text file, dataset YAML (exdark.yaml), or image directory")
+    parser.add_argument(
+        "--images", required=True, help="Path to text file, dataset YAML (exdark.yaml), or image directory"
+    )
     parser.add_argument("--n", type=int, default=300, help="Number of images to process")
     parser.add_argument("--out-csv", default="artifacts/phase0/rho_LY.csv", help="Output CSV path")
     parser.add_argument("--out-fig", default="artifacts/phase0/L_maps.png", help="Output visualization PNG path")
@@ -96,7 +100,7 @@ def resolve_images(img_source, n_max=300):
     else:
         raise FileNotFoundError(f"Cannot find image source: {img_source}")
 
-    paths = sorted(list(set(paths)))[:n_max]
+    paths = sorted(set(paths))[:n_max]
     if not paths:
         raise RuntimeError(f"No valid images found for source: {img_source}")
     return paths

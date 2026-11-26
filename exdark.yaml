@@ -2,8 +2,8 @@
 # ExDark (Exclusively Dark) Dataset configuration for RI-YOLO
 
 path: datasets/ExDark # dataset root dir
-train: images/train   # train images (relative to 'path')
-val: images/val       # val images (relative to 'path')
+train: images/train # train images (relative to 'path')
+val: images/val # val images (relative to 'path')
 
 # Classes (12 low-light object classes in ExDark)
 names:

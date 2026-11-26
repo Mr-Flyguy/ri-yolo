@@ -9,8 +9,10 @@ import argparse
 import csv
 import os
 import time
+
 import numpy as np
 import torch
+
 from ultralytics import YOLO
 from ultralytics.utils.torch_utils import get_flops
 
@@ -49,7 +51,10 @@ def main():
 
     rows = []
     print("\n" + "=" * 95, flush=True)
-    print(f"{'Model':<28} | {'Params (M)':<10} | {'GFLOPs':<8} | {'BS':<4} | {'FP16':<5} | {'Median (ms)':<11} | {'p95 (ms)':<9} | {'FPS':<7}", flush=True)
+    print(
+        f"{'Model':<28} | {'Params (M)':<10} | {'GFLOPs':<8} | {'BS':<4} | {'FP16':<5} | {'Median (ms)':<11} | {'p95 (ms)':<9} | {'FPS':<7}",
+        flush=True,
+    )
     print("=" * 95, flush=True)
 
     for cfg in args.models:

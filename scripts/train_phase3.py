@@ -16,8 +16,8 @@ ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from scripts.rfd_callbacks import add_rfd_logging  # noqa: E402
-from ultralytics import YOLO  # noqa: E402
+from scripts.rfd_callbacks import add_rfd_logging
+from ultralytics import YOLO
 
 # Complete Phase 3 experiment catalog (Runs 18-23 of 23)
 PHASE3_EXPERIMENTS = {
@@ -115,7 +115,7 @@ def run_experiment(run_name: str, exp_info: dict, args):
     close_mosaic = args.close_mosaic if args.close_mosaic is not None else exp_info["close_mosaic"]
     clean_pct = round(close_mosaic / epochs * 100.0, 1) if epochs > 0 else 0.0
 
-    print(f"\n{'='*70}")
+    print(f"\n{'=' * 70}")
     print(f"[START] Running Phase 3 Experiment: {run_name}")
     print(f"Group:            {exp_info['group']}")
     print(f"Description:      {exp_info['desc']}")
@@ -123,7 +123,7 @@ def run_experiment(run_name: str, exp_info: dict, args):
     print(f"Seed:             {exp_info['seed']}")
     print(f"Epochs:           {epochs}")
     print(f"Close Mosaic:     {close_mosaic} ({clean_pct}% clean epochs)")
-    print(f"{'='*70}\n")
+    print(f"{'=' * 70}\n")
 
     # Initialize model
     model = YOLO(exp_info["cfg"])
@@ -184,17 +184,16 @@ def run_experiment(run_name: str, exp_info: dict, args):
     # Extract final gamma if present
     gamma_val = "NA"
     for m in model.model.modules():
-        if m.__class__.__name__ in ("RFDBlock", "RFDBlockNoGate"):
-            if hasattr(m, "gamma"):
-                gamma_val = f"{float(m.gamma.detach().cpu().reshape(-1)[0]):+.6f}"
-                break
+        if m.__class__.__name__ in ("RFDBlock", "RFDBlockNoGate") and hasattr(m, "gamma"):
+            gamma_val = f"{float(m.gamma.detach().cpu().reshape(-1)[0]):+.6f}"
+            break
 
     # Extract final L_std from rfd_log.csv if available
     l_std_final = "NA"
     rfd_log_file = Path(args.project) / run_name / "rfd_log.csv"
     if rfd_log_file.exists():
         try:
-            with open(rfd_log_file, "r") as rf:
+            with open(rfd_log_file) as rf:
                 r_reader = list(csv.DictReader(rf))
                 if r_reader and "L_std_spatial" in r_reader[-1]:
                     l_std_final = f"{float(r_reader[-1]['L_std_spatial']):.4f}"
@@ -218,7 +217,7 @@ def run_experiment(run_name: str, exp_info: dict, args):
     # Update or append row in summary.csv
     existing_rows = []
     if summary_path.exists():
-        with open(summary_path, "r", newline="") as f:
+        with open(summary_path, newline="") as f:
             reader = csv.DictReader(f)
             existing_rows = [r for r in reader if r.get("run") != run_name]
     existing_rows.append(row)
