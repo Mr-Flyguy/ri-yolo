@@ -37,13 +37,15 @@ def add_rfd_logging(trainer):
 
         if ill is not None:
             ill_f = ill.detach().float()
-            r.update({
-                "L_mean": float(ill_f.mean()),
-                "L_std_spatial": float(ill_f.std(dim=(2, 3)).mean()) if ill_f.ndim >= 4 else float(ill_f.std()),
-                "L_min": float(ill_f.min()),
-                "L_max": float(ill_f.max()),
-                "L_sat_frac": float(((ill_f < 0.02) | (ill_f > 0.98)).float().mean()),
-            })
+            r.update(
+                {
+                    "L_mean": float(ill_f.mean()),
+                    "L_std_spatial": float(ill_f.std(dim=(2, 3)).mean()) if ill_f.ndim >= 4 else float(ill_f.std()),
+                    "L_min": float(ill_f.min()),
+                    "L_max": float(ill_f.max()),
+                    "L_sat_frac": float(((ill_f < 0.02) | (ill_f > 0.98)).float().mean()),
+                }
+            )
         rows.append(r)
 
     if not rows:

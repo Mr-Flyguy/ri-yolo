@@ -6,10 +6,9 @@ and relative improvement over baseline across seeds.
 """
 
 import argparse
-import csv
-import glob
 import os
 from pathlib import Path
+
 import numpy as np
 import pandas as pd
 
@@ -56,7 +55,9 @@ def main():
             summary_data[rname] = {
                 "mAP50": float(row["mAP50"]),
                 "mAP50_95": float(row["mAP50_95"]),
-                "gamma": float(row["gamma_final"]) if str(row["gamma_final"]).strip() not in ("NA", "None", "") else None,
+                "gamma": float(row["gamma_final"])
+                if str(row["gamma_final"]).strip() not in ("NA", "None", "")
+                else None,
             }
 
     # 2. Group by configuration
@@ -83,18 +84,20 @@ def main():
         gammas = [r["gamma"] for r in runs_for_cfg if r.get("gamma") is not None]
 
         trf_px, cov, dpar = TRF[cfg]
-        table_rows.append({
-            "config": cfg,
-            "n_runs": len(runs_for_cfg),
-            "TRF_px": trf_px,
-            "coverage_pct": cov,
-            "delta_params_M": dpar,
-            "mAP50_mean": round(float(m50_arr.mean()), 4),
-            "mAP50_std": round(float(m50_arr.std(ddof=1)), 4) if len(runs_for_cfg) > 1 else None,
-            "mAP50_95_mean": round(float(m95_arr.mean()), 4),
-            "mAP50_95_std": round(float(m95_arr.std(ddof=1)), 4) if len(runs_for_cfg) > 1 else None,
-            "gamma_mean": round(float(np.mean(gammas)), 6) if gammas else None,
-        })
+        table_rows.append(
+            {
+                "config": cfg,
+                "n_runs": len(runs_for_cfg),
+                "TRF_px": trf_px,
+                "coverage_pct": cov,
+                "delta_params_M": dpar,
+                "mAP50_mean": round(float(m50_arr.mean()), 4),
+                "mAP50_std": round(float(m50_arr.std(ddof=1)), 4) if len(runs_for_cfg) > 1 else None,
+                "mAP50_95_mean": round(float(m95_arr.mean()), 4),
+                "mAP50_95_std": round(float(m95_arr.std(ddof=1)), 4) if len(runs_for_cfg) > 1 else None,
+                "gamma_mean": round(float(np.mean(gammas)), 6) if gammas else None,
+            }
+        )
 
     if not table_rows:
         print("[WARNING] No completed run results found to generate C1 Table 1.")

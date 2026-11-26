@@ -7,6 +7,7 @@ saves figure, exports concatenated dataframe, and prints max/last metric checkpo
 
 import argparse
 import os
+
 import matplotlib.pyplot as plt
 import pandas as pd
 
@@ -32,7 +33,7 @@ def main():
         os.makedirs(os.path.dirname(os.path.abspath(args.csv)), exist_ok=True)
 
     n_cols = len(args.cols)
-    fig, axes = plt.subplots(1, n_cols, figsize=(5 * n_cols, 4.5))
+    _fig, axes = plt.subplots(1, n_cols, figsize=(5 * n_cols, 4.5))
     if n_cols == 1:
         axes = [axes]
 
